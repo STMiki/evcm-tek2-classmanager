@@ -7,8 +7,8 @@
  * (helper, client, mission, prestation, zoho)
  */
 
-class HelperException extends Exception;
-class ClientException extends Exception;
-class MissionException extends Exception;
-class PrestationException extends Exception;
-class ZohoException extends Exception;
+class HelperException extends Exception {};
+class ClientException extends Exception {};
+class MissionException extends Exception {};
+class PrestationException extends Exception {};
+class ZohoException extends Exception {};

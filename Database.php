@@ -17,7 +17,7 @@ class Database {
             $this->conn->exec("set names utf8");
         }catch(PDOException $exception){
             echo "Connection error : " . $exception->getMessage();
-	    echo "\nVersion de PHP : ".phpversion();
+        echo "\nVersion de PHP : ".phpversion();
         }
 
         return $this->conn;
