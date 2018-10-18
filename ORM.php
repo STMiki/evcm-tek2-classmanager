@@ -34,7 +34,7 @@ require_once('log.php');
  * class ORM
  *
  * This class is used for loading for communicate to the database.
- * /!\ WARNING :!\
+ * /!\ WARNING /!\
  * I use Mission and Prestation
  * this is not the same.
  * a Mission is the act where a helper go to the Client need it.
@@ -44,10 +44,17 @@ require_once('log.php');
  */
 class ORM {
     private $db;
+    private $zoho;
 
     public function __construct()
     {
         $this->db = $Database()->getConnection();
+//        $this->zoho = jsepfza;
+    }
+
+    public function __destruct()
+    {
+        //
     }
 
     public function getDatabase()
