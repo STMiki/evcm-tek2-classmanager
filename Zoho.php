@@ -1,8 +1,8 @@
 <?php
 
-require_once('ORM_constructor.php');
+require_once('log.php');
 
-class Zoho extends ORMConstructor {
+class Zoho {
 
 	private $domain;
 

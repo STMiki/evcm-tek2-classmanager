@@ -1,8 +1,6 @@
 <?php
 
 require_once('log.php');
-require_once('database.php');
-require_once('ORM_constructor.php');
 
 /*
  * Class Mission
@@ -16,7 +14,7 @@ require_once('ORM_constructor.php');
  * the update is not auto.
  *
  */
-class Mission extends ORMConstructor {
+class Mission {
 	private $ref;
 	private $id;
 	private $precision;

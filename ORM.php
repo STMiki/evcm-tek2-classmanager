@@ -44,11 +44,9 @@ require_once('log.php');
  */
 class ORM {
 	private $db;
-	private $used;
 
 	public function __construct() {
 		$this->db = $Database()->getConnection();
-		$this->used = 0;
 	}
 
 	public function getDatabase() {
@@ -70,13 +68,13 @@ class ORM {
 		
 	}
 
+	public function getMissionByRef($ref) {
+		
+	}
+
 	/* ---- Prestation related function ---- */
 	private function getPrestationById($id) {
-		$mission = new Mission($this, 'fillById');
-		if ($mission->getStatus() == 0)
-			return ($mission);
-		unset($mission);
-		return (null):
+
 	}
 }
 

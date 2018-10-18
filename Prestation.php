@@ -1,5 +1,7 @@
 <?php
 
-Class Prestation extends ORMConstructor {
+require_once('log.php');
+
+Class Prestation {
 
 }

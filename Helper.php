@@ -1,8 +1,8 @@
 <?php
 
-require_once('ORM_constructor.php');
+require_once('log.php');
 
-class Helper extends ORMConstructor {
+class Helper {
 	private $id_h;
 	private $actif;
 	private $competence;

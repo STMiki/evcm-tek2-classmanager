@@ -2,11 +2,13 @@
 EVCM - CLASS
 ============
 
-/!\ the orm will be deleted /!\
+the orm will be deleted
+
+ORM == Manager
+
+he manage all my class
 
 ORM
-  ClassManager
-    function for create the class
   Class
     function
     property
