@@ -57,6 +57,11 @@ class ORM {
         //
     }
 
+    public function __unset()
+    {
+        $this->__destruct();
+    }
+
     public function getDatabase()
     {
         return ($this->db);
