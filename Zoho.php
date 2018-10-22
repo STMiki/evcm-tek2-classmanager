@@ -36,6 +36,8 @@ class Zoho {
 
     private function getCleApi()
     {
+        if (!empty($this->token))
+            return;
         $data = $db->query('SELECT access_token_zoho, api_domain_zoho FROM CLE;')->fetch();
         $this->token = $data['access_token_zoho'];
         $this->api_domain = $data['api_domain_zoho'];
@@ -84,8 +86,34 @@ class Zoho {
         else if ($res->getStatusCode() != 200)
             throw new ZohoException('Unexpected Error. id: 01');
 
-        return (json_encode($res->getBody()->getContents())['data'][0]);
+        return (json_decode($res->getBody(), true)['data'][0]);
     }
 
-    public function updateToCrm($module, int $id, array $data);
+    public function updateToCrm($module, string $critere, string $value, array $data)
+    {
+        $id = getFromCRM($module, $critere, $value)['id'];
+        $this->getCleApi();
+
+        $client = new \GuzzleHttp\Client();
+        $url = $api_domain.'crm/v2/'.$module;
+        $header = [
+            'headers' => [
+                'Authorization' => 'Bearer '.$this->token,
+                'Cache-Control' => 'no-cache',
+                'Content-Type'  => 'application/json'
+            ],
+            'json' => [
+                'data' => [ $data ],
+                'trigger' => [ 'approval' ],
+                'wf_trigger' => true
+            ]
+        ];
+
+        $res = $client->request('POST', $url, $header);
+
+        if ($res->getStatusCode() != 200) {
+            //
+        }
+        return (json_decode($res->getBody(), true)['data'][0]['code']);
+    }
 }
