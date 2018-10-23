@@ -29,7 +29,6 @@ class Zoho {
     const HELPER      = 'Helper';
     const CLIENT      = 'Contacts';
     const MISSION     = 'Prestations';
-    const FINANCE     = 'Zoho_Finance';
     const WEB_CONTACT = 'Contacts-web';
 
     public function __construct($db)
@@ -76,17 +75,17 @@ class Zoho {
     }
 
     /* --------------- C  R  M --------------- */
-    public function getFromCRM($module, string $criteria, string $valueOfCriteria)
+    public function getFromCRM($module, string $criteria, string $valueOfCriteria, bool $mandatory=false)
     {
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
         }
         $this->getCleApi();
-        if ($this->isMandatory($module, $criteria))
-            $url = $api_domain.'crm/v2/'.$module.'/search?'.$criteria.'='.$valueOfCriteria;
+        if ($mandatory === true)
+            $url = $this->api_domain.'crm/v2/'.$module.'/search?'.$criteria.'='.$valueOfCriteria;
         else
-            $url = $api_domain.'crm/v2/'.$module.'/search?criteria=%28'.$criteria.':equals:'.$valueOfCriteria.'%29';
+            $url = $this->api_domain.'crm/v2/'.$module.'/search?criteria=%28'.$criteria.':equals:'.$valueOfCriteria.'%29';
 
         $client = new \GuzzleHttp\Client();
 
@@ -113,6 +112,40 @@ class Zoho {
         }
 
         return (json_decode($res->getBody(), true)['data'][0]);
+    }
+
+    /* /!\ ----------= DO NOT OVERUSE THIS METHOD =---------- /!\ */
+    /* /!\ --------= IT TAKE AN ETERNITY TO RESPOND =-------- /!\ */
+    public function getAllFromCRM($module)
+    {
+        if (!$this->isModule($module)) {
+            printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
+            throw new ZohoException('Module "'.$module.'" not found.');
+        }
+        $this->getCleApi();
+
+        $url = $this->api_domain.'/crm/v2/'.$module;
+
+        $client = new \GuzzleHttp\Client();
+
+        try {
+            $res = $client->request('GET', $url, $this->defaultHeader);
+        } catch (Exception $e) {
+            if ($res->getStatusCode() == 404) {
+                printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
+                throw new ZohoException('Url invalid.');
+            }
+        }
+
+        if ($res->getStatusCode() != 200) {
+            printLog(__METHOD__, 'Unexpected error (id: 01):'.
+                                'module : "'.$module.'"\n\t'.
+                                'URL    : "'.$url.'"\n\t'.
+                                'code   : "'.$res->getStatusCode().'"', true);
+            throw new ZohoException('Unexpected Error. id: 02');
+        }
+
+        return (json_decode($res->getBody(), true)['data']);
     }
 
     public function updateToCrm($module, array $data)
@@ -152,7 +185,7 @@ class Zoho {
         }
 
         if ($res->getStatusCode() != 200) {
-            printLog(__METHOD__, 'Unexpected error (id: 02):'.
+            printLog(__METHOD__, 'Unexpected error (id: 03):'.
                                 'module : "'.$module.'"\n\t'.
                                 'critere: "'.$criteria.'"\n\t'.
                                 'value  : "'.$value.'"\n\t'.
