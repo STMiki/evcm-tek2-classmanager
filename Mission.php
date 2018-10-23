@@ -6,17 +6,17 @@ require_once('log.php');
  * Class Mission
  *
  * contain all the information from a mission.
- * this class dosent create a new Mission when you create it.
- * when you create it, this contain a empty Mission.
- * you can select a Mission or create a new one.
  * modify all option and update it when you want.
  *
  * the update is not auto.
  *
  */
 class Mission {
+    private $db;
+
     private $ref;
     private $id;
+    private $id_zoho;
     private $precision;
     private $mode_intervention; //site, telephone, distant
     private $etat;
@@ -34,12 +34,13 @@ class Mission {
     private $comment_client;
     private $test;
 
-    public function __construct($orm, $constructor=null) {
-        parent::__construct($orm, $constructor);
+    public function __construct($db, array $data) {
+        $this->db  = $db;
+        $this->hydrate($data);
     }
 
     public function __destruct() {
-        parent::__destruct();
+        $this->db = null;
     }
 
     private function hydrate(array $data) {
