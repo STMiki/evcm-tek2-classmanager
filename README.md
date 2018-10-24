@@ -12,10 +12,8 @@ ORM
 
   Class
 
-    function
-    
+    function   
     property
-
     etc...
 
 EVCM - List Class Name
