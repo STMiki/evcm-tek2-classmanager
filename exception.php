@@ -7,6 +7,7 @@
  * (helper, client, mission, prestation, zoho)
  */
 
+class ORMException extends Exception {};
 class HelperException extends Exception {};
 class ClientException extends Exception {};
 class MissionException extends Exception {};
