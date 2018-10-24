@@ -26,3 +26,5 @@ EVCM - List Class Name
   * Zoho
 
 When we will call the ORM he can return a class listed below filled with the information needed.
+
+** IF YOU SEE AN ISSUE, PLS REPORT IT THX <3
