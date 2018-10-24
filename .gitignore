@@ -1,2 +1,9 @@
 \#*
 *.swp
+*.json
+*.lock
+*.phar
+vendor
+log
+structure_class.php
+~*
