@@ -24,6 +24,7 @@ class Zoho {
     private $defaultHeader;
     private $db;
     private $token;
+    private $historic = array();
 
     /* ----- CRM ----- */
     const HELPER      = 'Helper';
@@ -66,12 +67,23 @@ class Zoho {
 
     public function isModule($module)
     {
-        foreach ($this->getConstants() as $value) {
-            if ($module == $value) {
-                return (true);
+        return (array_search($module, $this->getConstants()) === false ? false : true);
+    }
+
+    public function rollBack()
+    {
+        $last = null;
+        $result = true;
+        foreach ($entry as $historic) {
+            if ($entry['method'] == 'POST') {
+                if ($last === null)
+                    $result = false;
+                else
+                    $this->updateToCRM($last['module'], $last['data']);
             }
+            $last = $entry;
         }
-        return (false);
+        return ($result);
     }
 
     /* --------------- C  R  M --------------- */
@@ -111,6 +123,12 @@ class Zoho {
             throw new ZohoException('Unexpected Error. id: 01');
         }
 
+        $this->historic[] = ['method' => 'GET',
+                             'url' => $url,
+                             'module' => $module,
+                             'header' => $this->defaultHeader,
+                             'result' => $res->getbody()];
+
         return (json_decode($res->getBody(), true)['data'][0]);
     }
 
@@ -144,6 +162,12 @@ class Zoho {
                                 'code   : "'.$res->getStatusCode().'"', true);
             throw new ZohoException('Unexpected Error. id: 02');
         }
+
+        $this->historic[] = ['method' => 'GET',
+                             'url' => $url,
+                             'module' => $module,
+                             'header' => $this->defaultHeader,
+                             'result' => $res->getbody()];
 
         return (json_decode($res->getBody(), true)['data']);
     }
@@ -193,6 +217,13 @@ class Zoho {
                                 'code   : "'.$res->getStatusCode().'"', true);
             throw new ZohoException('Unexpected Error (id: 02)');
         }
+
+        $this->historic[] = ['method' => 'POST',
+                             'module' => $module,
+                             'url' => $url,
+                             'header' => $this->defaultHeader,
+                             'data' => $data];
+
         return (json_decode($res->getBody(), true)['data'][0]['code']);
     }
 }
