@@ -2,9 +2,9 @@
 
 function printLog($from, $message, $isException = false) {
 
-    $_dirLog = '/var/www/html/log/';
+    $_dirLog = './log/';
 
-    if ($type == false)
+    if ($isException == false)
         $filename = 'Log_';
     else
         $filename = 'Exception_';
@@ -12,5 +12,5 @@ function printLog($from, $message, $isException = false) {
     $filename .= date('Y:m:d-H:i:s').'_';
     $filename .= $from.'.txt';
 
-    file_put_contents($_dirLog.$filename, $message, FILE_APPEND);
+    file_put_contents($_dirLog.$filename, $message.'\n', FILE_APPEND);
 }
