@@ -9,8 +9,10 @@ ORM == Manager
 he manage all my class
 
 ORM
+
   Class
-    function
+
+    function   
     property
     etc...
 
