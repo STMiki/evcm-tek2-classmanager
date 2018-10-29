@@ -21,7 +21,7 @@
  * --------------------------------------------
  */
 function classAutoLoad($class) {
-    require($class.'.php');
+    require_once($class.'.php');
 }
 
 spl_autoload_register('classAutoLoad');
@@ -31,19 +31,37 @@ spl_autoload_register('classAutoLoad');
 require_once('log.php');
 require_once('exception.php');
 
+/**
+ *
+ */
+abstract class DatabaseObject {
+    protected $last_id;
+    protected $historic = Array();
+
+    abstract public function __construct(array $data);
+    abstract public function __destruct();
+    abstract protected function hydrate(array $data);
+    abstract public function toKey(string $key);
+
+    final public function getLastId() {return ($this->last_id);}
+    final public function getHistoric() {return ($this->historic);}
+    final public function resetHistoric() {$this->historic = Array();}
+}
+
 /*
  * class ORM
  *
  * This class is used for loading for communicate to the database.
+ * It can generate a new object or load one from different sources.
  * /!\ WARNING /!\
  * I use Mission and Prestation
  * this is not the same.
- * a Mission is the act where a helper go to the Client need it.
+ * a Mission is the act where a helper go to the Client.
  * a Prestation is the thing that the Client need the helper for.
  *     (windows 10 blue screen, install printer, etc...)
  *
  */
-class ORM {
+final class ORM {
     private $db;
     private $zoho;
 
@@ -51,7 +69,7 @@ class ORM {
     {
         $database = new Database();
         $this->db = $database->getConnection();
-        $this->db->setAttribute(PDO::ATTR_AUTOCOMMIT, false);
+        // $this->db->setAttribute(PDO::ATTR_AUTOCOMMIT, false);
         $this->zoho = new Zoho($this->db);
     }
 
@@ -72,6 +90,15 @@ class ORM {
         return ($this->zoho->rollBack());
     }
 
+    private function filtre(array $data)
+    {
+         foreach ($data as $key => $value) {
+             if (!is_string($key))
+                 unset($data[$key]);
+         }
+         return ($data);
+    }
+
     /*************************************/
     /* ----- Get from the database ----- */
     /*************************************/
@@ -85,10 +112,10 @@ class ORM {
         $stmt->bindParam(':id_h', $id);
         $stmt->execute();
         if ($stmt->rowCount() == 1)
-            $result = new Helper($this->db, $stmt->fetch());
+            $result = new Helper($this->filtre($stmt->fetch()));
         else if ($stmt->rowCount() > 1) {
             printLog(__METHOD__, 'Helper id not unique. /!\\', true);
-            $result = new Helper($this->db, $stmt->fetch());
+            $result = new Helper($this->filtre($stmt->fetch()));
         } else
             printLog(__METHOD__, 'Helper id: '.$id.' not found');
         printLog(__METHOD__, 'Helper id '.$id.'. found ');
@@ -104,10 +131,10 @@ class ORM {
         $stmt->bindParam(':id_c', $id);
         $stmt->execute();
         if ($stmt->rowCount() == 1)
-            $result = new Client($this->db, $stmt->fetch());
+            $result = new Client($this->filtre($stmt->fetch()));
         else if ($stmt->rowCount() > 1) {
             printLog(__METHOD__, 'Client id not unique. /!\\', true);
-            $result = new Client($this->db, $stmt->fetch());
+            $result = new Client($this->filtre($stmt->fetch()));
         } else {
             printLog(__METHOD__, 'Client id: '.$id.' not found');
             return (false);
@@ -122,18 +149,31 @@ class ORM {
     }
 
     /* ---- Mission related function ---- */
+    public function testMissionById($id)
+    {
+        $req = $this->db->prepare('SELECT * FROM MISSION WHERE id_m=:id_m');
+        $req->bindParam(':id_m', $id);
+        $req->execute();
+        $result = null;
+
+        if ($req->rowCount()) {
+            $result = [filtre($req->fetch()), $this->getMissionById($id)];
+        }
+        return ($result);
+    }
+
     public function getMissionById($id)
     {
         $result = null;
 
-        $stmt = $this->db->prepare('SELECT * FROM MISSION WHERE id_m=:id_m');
+        $stmt = $this->db->prepare('SELECT * FROM MISSION WHERE id_m=:id_m;');
         $stmt->bindParam(':id_m', $id);
         $stmt->execute();
         if ($stmt->rowCount() == 1)
-            $result = new Mission($this->db, $stmt->fetch());
+            $result = new Mission($this->filtre($stmt->fetch()));
         else if ($stmt->rowCount() > 1) {
             printLog(__METHOD__, 'Mission id not unique. /!\\', true);
-            $result = new Mission($this->db, $stmt->fetch());
+            $result = new Mission($this->filtre($stmt->fetch()));
         } else {
             printLog(__METHOD__, 'Mission id: '.$id.' not found');
             return (false);
@@ -155,10 +195,10 @@ class ORM {
         $stmt->bindParam(':ref_m', $ref);
         $stmt->execute();
         if ($stmt->rowCount() == 1)
-            $result = new Mission($this->db, $stmt->fetch());
+            $result = new Mission($this->filtre($stmt->fetch()));
         else if ($stmt->rowCount() > 1) {
             printLog(__METHOD__, 'Mission ref not unique. /!\\', true);
-            $result = new Mission($this->db, $stmt->fetch());
+            $result = new Mission($this->filtre($stmt->fetch()));
         } else {
             printLog(__METHOD__, 'Mission ref: '.$ref.' not found');
             return (false);
@@ -176,10 +216,10 @@ class ORM {
         $stmt->bindParam(':id_presta', $id);
         $stmt->execute();
         if ($stmt->rowCount() == 1)
-            $result = new Prestation($this->db, $stmt->fetch());
+            $result = new Prestation($this->filtre($stmt->fetch()));
         else if ($stmt->rowCount() > 1) {
             printLog(__METHOD__, 'Prestation id not unique. /!\\', true);
-            $result = new Prestation($this->db, $stmt->fetch());
+            $result = new Prestation($this->filtre($stmt->fetch()));
         } else {
             printLog(__METHOD__, 'Prestation id: '.$id.' not found');
             return (false);
@@ -258,7 +298,7 @@ class ORM {
 
     public function createMission(array $data, bool $auto=false)
     {
-        
+
         return ([$this->createMissionId(), $this->createMissionId(true)]);
     }
 
@@ -266,8 +306,48 @@ class ORM {
     /* ----- Update to the database ----- */
     /**************************************/
 
-    public function updateMission(Mission $data)
+    public function updateMission(Mission $mission)
     {
-        
+        if (count($mission->getHistoric()) <= 0)
+            return (false);
+        $sql = 'UPDATE `MISSION` SET ';
+
+        $updateValue = array();
+
+        foreach($mission->getHistoric() as $value) {
+            if (in_array($value, $updateValue) === false) {
+                $sql .= '`'.$value.'`=:'.$value.', ';
+                $updateValue[] = $value;
+            }
+        }
+        $sql = substr($sql, - strlen($sql), -2);
+        $sql .= ' WHERE id_m=:last_id_m';
+
+        $req = $this->db->prepare($sql);
+
+        foreach($updateValue as $key) {
+            $method = 'get'.$mission->toKey($key);
+            $value = $mission->$method();
+            printLog(__METHOD__, '$req->bindValue(":'.$key.'", $'.$value.'); // mission->'.$method.'()');
+            if ($value === null)
+                $req->bindValue(':'.$key, null, PDO::PARAM_INT);
+            else
+                $req->bindValue(':'.$key, $value);
+            $sql = str_replace(':'.$key, $value, $sql);
+        }
+
+        $lastId = $mission->getLastId();
+
+        $sql = str_replace(':last_id_m', $lastId, $sql);
+
+        $req->bindParam(':last_id_m', $lastId);
+        $req->execute();
+
+        printLog(__METHOD__, 'requete: '.$sql.'\nhostoric: '.print_r($mission->getHistoric(), true).'return code: '.$req->errorCode());
+        $mission->resetHistoric();
+
+        if ($req->errorCode() === '00000')
+            return (true);
+        return (false);
     }
 }
