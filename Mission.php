@@ -12,34 +12,34 @@ require_once('log.php');
  *
  */
 final class Mission extends DatabaseObject {
-    private $ref_m = null;
-    private $id_m = null;
-    private $precisions_m = null;
-    private $mode_intervention_m = null;
-    private $etat_m = null;
-    private $retard_m = null;
-    private $date_demande_m = null;
-    private $date_souhaitee_m = null;
-    private $date_intervention_m = null;
-    private $date_fin_m = null;
-    private $support_utilise_m = null;
-    private $urgence_m = null;
-    private $facture_envoyee_m = null;
-    private $paye_m = null;
-    private $com_bil = null;
-    private $signature_bil = null;
-    private $rep_resultat_bil = null;
-    private $rep_question1_bil = null;
-    private $rep_question2_bil = null;
-    private $rep_question3_bil = null;
-    private $rep_question4_bil = null;
-    private $satisfaction_bil = null;
-    private $id_h = null;
-    private $id_cl = null;
-    private $forfait_m = null;
-    private $id_prestation = null;
-    private $commentaire_m = null;
-    private $test = null;
+    protected $ref_m = null;
+    protected $id_m = null;
+    protected $precisions_m = null;
+    protected $mode_intervention_m = null;
+    protected $etat_m = null;
+    protected $retard_m = null;
+    protected $date_demande_m = null;
+    protected $date_souhaitee_m = null;
+    protected $date_intervention_m = null;
+    protected $date_fin_m = null;
+    protected $support_utilise_m = null;
+    protected $urgence_m = null;
+    protected $facture_envoyee_m = null;
+    protected $paye_m = null;
+    protected $com_bil = null;
+    protected $signature_bil = null;
+    protected $rep_resultat_bil = null;
+    protected $rep_question1_bil = null;
+    protected $rep_question2_bil = null;
+    protected $rep_question3_bil = null;
+    protected $rep_question4_bil = null;
+    protected $satisfaction_bil = null;
+    protected $id_h = null;
+    protected $id_cl = null;
+    protected $forfait_m = null;
+    protected $id_prestation = null;
+    protected $commentaire_m = null;
+    protected $test = null;
 
     public function __construct(array $data)
     {
@@ -82,15 +82,6 @@ final class Mission extends DatabaseObject {
         $this->test = null;
     }
 
-    protected function hydrate(array $data)
-    {
-        foreach($data as $key => $value) {
-            $method = 'set'.$this->toKey($key);
-            $this->$method($value);
-        }
-        $this->resetHistoric();
-    }
-
     public function toKey(string $value)
     {
         $data = explode('_', $value);
@@ -105,6 +96,35 @@ final class Mission extends DatabaseObject {
                     $result .= ucFirst($word);
             }
         }
+        return ($result);
+    }
+
+    public function transformForZoho()
+    {
+        $result = Array();
+
+        $result['Layout'] = array('name' => 'EVCM', 'id' => '99037000000177017');
+
+        $result['Name']                      = $this->ref_m;
+        $result['ID_presta']                 = $this->id_m;
+        $result['D_tails_besoins']           = $this->precisions_m;
+        $result['Mode_d_intervention']       = $this->mode_intervention_m;
+        $result['Etat']                      = $this->etat_m;
+        $result['Date_demand_e_form']        = explode(' ', $this->date_demande_m)[0];
+        $result['Heure_demand_e_form']       = explode(' ', $this->date_demande_m)[1];
+        $result['Date_souhait_e']            = $this->date_souhaitee_m;
+        $result['Rendez_vous']               = $this->date_intervention_m;
+        $result['R_alis']                    = $this->date_fin_m;
+        $result['Urgence']                   = $this->urgence_m;
+        $result['Facture_acquit_e_envoy_e']  = $this->facture_envoyee_m;
+        $result['Commentaire_bilan_presta']  = $this->com_bil;
+        $result['Form_satisfaction_envoy']   = ($this->rep_question1_bil !== NULL || $this->rep_question2_bil !== NULL || $this->rep_question3_bil !== NULL || $this->rep_question4_bil !== NULL)
+        $result['Form_satisfaction_compl_t'] = ($this->rep_question1_bil !== NULL && $this->rep_question2_bil !== NULL && $this->rep_question3_bil !== NULL && $this->rep_question4_bil !== NULL)
+        $result['ID_Helper_pour_BDD']        = $this->id_h;
+        $result['ID_client']                 = $this->id_cl;
+        $result['Type_presta']               = $this->id_presta;
+        $result['TEST']                      = ($this->test ? 'OUI' : 'NON');
+
         return ($result);
     }
 
@@ -140,7 +160,7 @@ final class Mission extends DatabaseObject {
     public function setRef(string $ref)
     {
         $ref = (string) $ref;
-        if (is_string($ref) && preg_match('/^([0-9]{2}((0[1-9])|(1[0-2]))((0[1-9])|([12][0-9])|(3[01]))((0[0-9])|(1[0-9])|(2[0-3])))-[A-Z]{4}-[1-9]([0-9]{1,})?$/', $ref) && strlen($ref) <= 25) {
+        if (is_string($ref) && preg_match('/^([0-9]{2}((0[1-9])|(1[0-2]))((0[1-9])|([12][0-9])|(3[01]))((0[0-9])|(1[0-9])|(2[0-3])))-[a-zA-Z]{4}-[1-9]([0-9]{1,})?$/', $ref) && strlen($ref) <= 25) {
             $this->ref_m = $ref;
             $this->historic[] = 'ref_m';
             return (true);
