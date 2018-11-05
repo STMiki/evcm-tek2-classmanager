@@ -36,6 +36,11 @@ final Class Prestation extends DatabaseObject {
         return ($result);
     }
 
+    public function transformForZoho()
+    {
+        return (Array());
+    }
+
     public function getIdPresta()      {return ($this->id_presta);}
     public function getTitrePresta()   {return ($this->titre_presta);}
     public function getContenuPresta() {return ($this->contenu_presta);}
