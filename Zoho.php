@@ -1,10 +1,11 @@
 <?php
 
-if (!defined('ROOT_DIR')) define('ROOT_DIR', '/home/etvoilacfy/www/');
-
-require_once(ROOT_DIR.'../vendor/autoload.php');
-require_once(ROOT_DIR.'refresh.php');
-require_once(ROOT_DIR.'refreshInvoice.php');
+if (!defined('ROOT_DIR')) define('ROOT_DIR', '/var/www/html/evcm/ftp.cluster026.hosting.ovh.net/www/');
+// if (!defined('ROOT_DIR')) define('ROOT_DIR', '/home/etvoilacfy/www/');
+//
+// require_once(ROOT_DIR.'../vendor/autoload.php');
+// require_once(ROOT_DIR.'refresh.php');
+// require_once(ROOT_DIR.'refreshInvoice.php');
 
 require_once('log.php');
 
@@ -27,7 +28,7 @@ class Zoho {
     private $historic = array();
 
     /* ----- CRM ----- */
-    const HELPER      = 'Helper';
+    const HELPER      = 'Helpers';
     const CLIENT      = 'Contacts';
     const MISSION     = 'Prestations';
     const WEB_CONTACT = 'Contacts-web';
@@ -172,12 +173,66 @@ class Zoho {
         return (json_decode($res->getBody(), true)['data']);
     }
 
-    public function updateToCrm($module, array $data)
+    public function updateToCRM($module, array $data)
     {
         if (!isset($data['id'])) {
             printLog(__METHOD__, 'unknow id: '.$data['id'], true);
             throw new ZohoException('Id not found');
         }
+        if (!$this->isModule($module)) {
+            printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
+            throw new ZohoException('Module "'.$module.'" not found.');
+        }
+        $this->getCleApi();
+
+        $client = new \GuzzleHttp\Client();
+        $url = $api_domain.'crm/v2/'.$module;
+        $header = [
+            'headers' => [
+                'Authorization' => 'Bearer '.$this->token,
+                'Cache-Control' => 'no-cache',
+                'Content-Type'  => 'application/json'
+            ],
+            'json' => [
+                'data' => [ $data ],
+                'trigger' => [ 'approval' ],
+                'wf_trigger' => true
+            ]
+        ];
+
+        try {
+           $res = $client->request('PUT', $url, $header);
+        } catch (Exception $e) {
+            if ($res->getStatusCode() == 404) {
+                printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
+                throw new ZohoException('Url invalid.');
+            }
+        }
+
+        if ($res->getStatusCode() != 200) {
+            printLog(__METHOD__, 'Unexpected error (id: 03):'.
+                                'module : "'.$module.'"\n'.
+                                'critere: "'.$criteria.'"\n'.
+                                'value  : "'.$value.'"\n'.
+                                'URL    : "'.$url.'"\n'.
+                                'code   : "'.$res->getStatusCode().'"\n'.
+                                'body   : "'.$res->getBody().'"', true);
+            throw new ZohoException('Unexpected Error (id: 02)');
+        }
+
+        $this->historic[] = ['method' => 'PUT',
+                             'module' => $module,
+                             'url' => $url,
+                             'header' => $this->defaultHeader,
+                             'data' => $data];
+
+        if (json_decode($res->getBody(), true)['data'][0]['code'] == 'SUCCESS')
+            return (true);
+        return (false);
+    }
+
+    public function insertToCRM($module, array $data)
+    {
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
@@ -210,20 +265,23 @@ class Zoho {
 
         if ($res->getStatusCode() != 200) {
             printLog(__METHOD__, 'Unexpected error (id: 03):'.
-                                'module : "'.$module.'"\n\t'.
-                                'critere: "'.$criteria.'"\n\t'.
-                                'value  : "'.$value.'"\n\t'.
-                                'URL    : "'.$url.'"\n\t'.
-                                'code   : "'.$res->getStatusCode().'"', true);
+                                'module : "'.$module.'"\n'.
+                                'critere: "'.$criteria.'"\n'.
+                                'value  : "'.$value.'"\n'.
+                                'URL    : "'.$url.'"\n'.
+                                'code   : "'.$res->getStatusCode().'"\n'.
+                                'body   : "'.$res->getBody().'"', true);
             throw new ZohoException('Unexpected Error (id: 02)');
         }
 
-        $this->historic[] = ['method' => 'POST',
+        $this->historic[] = ['method' => 'PUT',
                              'module' => $module,
                              'url' => $url,
                              'header' => $this->defaultHeader,
                              'data' => $data];
 
-        return (json_decode($res->getBody(), true)['data'][0]['code']);
+        if (json_decode($res->getBody(), true)['data'][0]['code'] == 'SUCCESS')
+            return (true);
+        return (false);
     }
 }
