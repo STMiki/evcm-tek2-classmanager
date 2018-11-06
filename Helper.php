@@ -98,7 +98,7 @@ final class Helper extends DatabaseObject {
         $result['ID_Helper'] = $this->id_h;
         $result['Pr_nom'] = $this->prenom_h;
         $result['Name'] = $this->nom_h;
-        $result['Quadri'] = SELF::createQuadri($this->prenom_h, $this->nom_h));
+        $result['Quadri'] = SELF::createQuadri($this->prenom_h, $this->nom_h);
         $result['t_l_phone'] = $this->tel_h;
         $result['Email'] = $this->mail_h;
         $result['Adresse_rue'] = $this->adresse_h;
