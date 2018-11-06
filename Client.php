@@ -84,6 +84,8 @@ final class Client extends DatabaseObject {
         $result['Full_Name'] = $this->prenom_cl.' '.$this->nom_cl;
         $result['Phone'] = $this->tel_cl;
         $result['SIRET'] = $this->siret_cl;
+        $result['Abonnement'] = $this->type_abo_cl;
+        $result['D_but_d_abonnement'] = $this->date_debut_abo_cl;
         $result['TEST'] = $this->test;
 
         return ($result);
@@ -198,7 +200,7 @@ final class Client extends DatabaseObject {
     {
         if ($tel !== null)
             $tel = (string) $tel;
-        if ($tel === null || (is_string($tel) && strlen($tel) <= 100 && preg_match('//', $tel))) {
+        if ($tel === null || (is_string($tel) && strlen($tel) <= 100 && preg_match('/^(((\(?\+([0-9]{2})|(00[0-9]{2}))\)?[ \-]{0,}0?[1-9])|(0[1-9][ \-]?))[ \-]{0,}([0-9]{2}[ \-]{0,}){4}$/', $tel))) {
             $this->tel_cl = $tel;
             $this->historic[] = 'tel_cl';
             return (true);
@@ -218,10 +220,10 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setNoteGen(float $note)
+    public function setNoteGen($note)
     {
-        $note = (float) $note;
-        if ($note >= 0) {
+        $note = floatval($note);
+        if ($note >= 0.0 && $note <= 5.0) {
             $this->note_gen_cl = $note;
             $this->historic[] = 'note_gen_cl';
             return (true);
@@ -229,11 +231,11 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setNoteExigence(float $note)
+    public function setNoteExigence($note)
     {
-        $note = (float) $note;
+        $note = floatval($note);
         if ($note >= 0) {
-            $this->note_gen_cl = $note;
+            $this->note_exigence_cl = $note;
             $this->historic[] = 'note_gen_cl';
             return (true);
         }
@@ -278,12 +280,17 @@ final class Client extends DatabaseObject {
 
     public function setTest($test)
     {
-        if ($test !== null)
-            $test = (string) $test;
-        if ($test === null || (is_string($test) && strlen($test) <= 7)) {
-            $this->test = $test;
-            $this->historic[] = 'test';
-            return (true);
+        if ($test == null || is_int($test) || is_bool($test) || is_string($test)) {
+                if ($test == null)
+                    $this->test = $test;
+                else if (is_string($test) && in_array(strtolower($test), ['oui', 'non']))
+                    $this->test = (strtolower($test) === 'oui' ? 'OUI' : 'NON');
+                else {
+                    $test = (bool) $test;
+                    $this->test = ($test ? 'OUI' : 'NON');
+                }
+                $this->historic[] = 'test';
+                return (true);
         }
         return (false);
     }
