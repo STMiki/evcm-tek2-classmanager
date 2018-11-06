@@ -1,9 +1,9 @@
 <?php
 
-if (!defined('ROOT_DIR')) define('ROOT_DIR', '/var/www/html/evcm/ftp.cluster026.hosting.ovh.net/www/');
+if (!defined('ROOT_DIR')) define('ROOT_DIR', '/var/www/html/class/log/');
 // if (!defined('ROOT_DIR')) define('ROOT_DIR', '/home/etvoilacfy/www/');
 //
-// require_once(ROOT_DIR.'../vendor/autoload.php');
+require_once(ROOT_DIR.'../vendor/autoload.php');
 // require_once(ROOT_DIR.'refresh.php');
 // require_once(ROOT_DIR.'refreshInvoice.php');
 
@@ -19,7 +19,7 @@ require_once('log.php');
  * exemple: array(data) ['id'=> 99037000000000453, 'etc' => '...'];
  *
  */
-class Zoho {
+final class Zoho {
 
     private $api_domain;
     private $defaultHeader;
@@ -47,9 +47,11 @@ class Zoho {
 
     private function getCleApi()
     {
+        return (true); // TODO: remove this for test
         if (!empty($this->token))
             return;
-        $data = $db->query('SELECT access_token_zoho, api_domain_zoho FROM CLE;')->fetch();
+        $req = $this->db->query('SELECT `access_token_zoho`, `api_domain_zoho` FROM `CLE`;');
+        $data = $req->fetch();
         $this->token = $data['access_token_zoho'];
         $this->api_domain = $data['api_domain_zoho'];
         $this->defaultHeader = [
@@ -90,6 +92,7 @@ class Zoho {
     /* --------------- C  R  M --------------- */
     public function getFromCRM($module, string $criteria, string $valueOfCriteria, bool $mandatory=false)
     {
+        return (true); // TODO: remove this for test
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
@@ -137,6 +140,7 @@ class Zoho {
     /* /!\ --------= IT TAKE AN ETERNITY TO RESPOND =-------- /!\ */
     public function getAllFromCRM($module)
     {
+        return (true); // TODO: remove this for test
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
@@ -175,6 +179,7 @@ class Zoho {
 
     public function updateToCRM($module, array $data)
     {
+        return (true); // TODO: remove this for test
         if (!isset($data['id'])) {
             printLog(__METHOD__, 'unknow id: '.$data['id'], true);
             throw new ZohoException('Id not found');
@@ -233,6 +238,7 @@ class Zoho {
 
     public function insertToCRM($module, array $data)
     {
+        return (true); // TODO: remove this for test
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
