@@ -17,7 +17,7 @@ final class Log {
 
     public function __invoke($from, $message, $isException = SELF::INFO)
     {
-        $this->printLog($from, $message, $isException);
+        $this->stockLog($from, $message, $isException);
     }
 
     public function stockLog($from, $message, $isException = SELF::INFO)
@@ -32,6 +32,7 @@ final class Log {
             $data['type'] = 'Info';
 
         $data['origin'] = $from;
+        $data['heure'] = date('H-i-s');
         $data['message'] = str_replace('\n', PHP_EOL."\t", str_replace(PHP_EOL, '\n',$message));;
 
         $this->message_log[] = $data;
@@ -42,12 +43,15 @@ final class Log {
         $message = '';
 
         foreach ($this->message_log as $value) {
-            $message .= "[{$value['type']}] ({$value['origin']}) : {$value['message']}\n";
+            $message .= "[{$value['type']}] ({$value['origin']}) {{$value['heure']}}: {$value['message']}\n";
         }
-        $filename = 'Log_'.date('Y-m-d_H-i-s');
+        $filename = 'Log_'.date('Y-m-d');
 
-        file_put_contents(SELF::DIR_LOG.$filename.'.txt', $message);
-        file_put_contents(SELF::DIR_LOG.$filename.'.json', json_encode($this->message_log));
+        file_put_contents(SELF::DIR_LOG.$filename.'.txt', $message, FILE_APPEND);
+        $raw = (file_exists(SELF::DIR_JSON.$filename.'.json') ? file_get_contents(SELF::DIR_JSON.$filename.'.json') : NULL);
+        $data = ($raw != NULL ? json_decode($raw) : Array());
+        $data[] = $this->message_log;
+        file_put_contents(SELF::DIR_JSON.$filename.'.json', json_encode($data));
     }
 }
 
