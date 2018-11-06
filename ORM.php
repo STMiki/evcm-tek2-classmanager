@@ -15,6 +15,9 @@
  *
  */
 
+ const ENV = 'test';
+ const VERSION = '1.0.0';
+
 /* --------------------------------------------
  * ---  Load automaticaly the class needed  ---
  * --- The file need to be like 'Class.php' ---
@@ -32,7 +35,7 @@ require_once('log.php');
 require_once('exception.php');
 
 /*
- *
+ * TODO: faire la descrition de cette class
  */
 abstract class DatabaseObject {
     protected $last_id;
@@ -52,7 +55,7 @@ abstract class DatabaseObject {
         foreach($data as $key => $value) {
             $method = 'set'.$this->toKey($key);
             if (!$this->$method($value)) {
-                printLog(__METHOD__, 'A set value from database failled: '.$method.'('.$value.')', 2);
+                printLog(__METHOD__, 'A set value from database can\'t be set: '.$method.'('.$value.')', 2);
                 $this->$key = $value;
             }
         }
@@ -69,7 +72,7 @@ abstract class DatabaseObject {
  * I use Mission and Prestation
  * this is not the same.
  * a Mission is the act where a helper go to the Client.
- * a Prestation is the thing that the Client need the helper for.
+ * a Prestation is the task that the Client need the helper for.
  *     (windows 10 blue screen, install printer, etc...)
  *
  */
@@ -102,7 +105,7 @@ final class ORM {
         return ($this->zoho->rollBack());
     }
 
-    private function filtre(array $data)
+    public function filtre(array $data)
     {
          foreach ($data as $key => $value) {
              if (!is_string($key))
@@ -284,7 +287,7 @@ final class ORM {
         $req->bindValue(':id_cl', $data['id_cl']);
         $req->execute();
 
-        $this->zoho->insertToCrm('Prestations', $mission->transformForZoho());
+        //$this->zoho->insertToCrm('Prestations', $mission->transformForZoho());
 
         return ($mission);
     }
@@ -308,7 +311,7 @@ final class ORM {
     }
 
     /* ---- Client related function ---- */
-    public function createClientFromData(array $data)
+    public function createClientFromArray(array $data)
     {
         $sql = "insert into `CLIENT` (";
         $val = '';
@@ -337,7 +340,7 @@ final class ORM {
     }
 
     /* ---- Helper related function ---- */
-    public function createHelperFromData(array $data)
+    public function createHelperFromArray(array $data)
     {
         $sql = "insert into `HELPER` (";
         $val = '';
@@ -366,7 +369,7 @@ final class ORM {
     }
 
     /**************************************/
-    /* ----- Update to the database ----- */ // A MODIFIER: AJOUTER ZOHO --'
+    /* ----- Update to the database ----- */
     /**************************************/
 
     /* ---- Mission related function ---- */
@@ -434,6 +437,7 @@ final class ORM {
             printLog(__METHOD__, 'Update to the CRM failled.', 1);
             throw new ORMException('Update to the CRM failled.');
         }
+        return (true);
     }
 
     /* ---- Helper related function ---- */
@@ -501,6 +505,7 @@ final class ORM {
             printLog(__METHOD__, 'Update to the CRM failled.', 1);
             throw new ORMException('Update to the CRM failled.');
         }
+        return (true);
     }
 
     /* ---- Client related function ---- */
@@ -552,7 +557,7 @@ final class ORM {
     public function updateClient_zoho(Client $client)
     {
         $data = $client->transformForZoho();
-        $dataCRM = $this->zoho->getFromCRM('Contacts', 'Email', $data['Email']);
+        $dataCRM = $this->zoho->getFromCRM('Contacts', 'Email', $data['Email'], true);
         $data['id'] = $dataCRM['id'];
 
         return ($this->zoho->updateToCRM('Contacts', $data));
@@ -568,6 +573,7 @@ final class ORM {
             printLog(__METHOD__, 'Update to the CRM failled.', 1);
             throw new ORMException('Update to the CRM failled.');
         }
+        return (true);
     }
 
     /* ---- Prestation related function ---- */
@@ -622,9 +628,10 @@ final class ORM {
             printLog(__METHOD__, 'Update to the database failled.', 1);
             throw new ORMException('Update to the database failled.');
         }
-        if (!$this->updatePrestation_zoho($presta)) {
-            printLog(__METHOD__, 'Update to the CRM failled.', 1);
-            throw new ORMException('Update to the CRM failled.');
-        }
+        // if (!$this->updatePrestation_zoho($presta)) {
+        //     printLog(__METHOD__, 'Update to the CRM failled.', 1);
+        //     throw new ORMException('Update to the CRM failled.');
+        // }
+        return (true);
     }
 }
