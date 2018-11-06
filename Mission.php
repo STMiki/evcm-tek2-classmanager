@@ -118,11 +118,11 @@ final class Mission extends DatabaseObject {
         $result['Urgence']                   = $this->urgence_m;
         $result['Facture_acquit_e_envoy_e']  = $this->facture_envoyee_m;
         $result['Commentaire_bilan_presta']  = $this->com_bil;
-        $result['Form_satisfaction_envoy']   = ($this->rep_question1_bil !== NULL || $this->rep_question2_bil !== NULL || $this->rep_question3_bil !== NULL || $this->rep_question4_bil !== NULL)
-        $result['Form_satisfaction_compl_t'] = ($this->rep_question1_bil !== NULL && $this->rep_question2_bil !== NULL && $this->rep_question3_bil !== NULL && $this->rep_question4_bil !== NULL)
+        $result['Form_satisfaction_envoy']   = ($this->rep_question1_bil != NULL || $this->rep_question2_bil != NULL || $this->rep_question3_bil != NULL || $this->rep_question4_bil != NULL);
+        $result['Form_satisfaction_compl_t'] = ($this->rep_question1_bil != NULL && $this->rep_question2_bil != NULL && $this->rep_question3_bil != NULL && $this->rep_question4_bil != NULL);
         $result['ID_Helper_pour_BDD']        = $this->id_h;
         $result['ID_client']                 = $this->id_cl;
-        $result['Type_presta']               = $this->id_presta;
+        $result['Type_presta']               = $this->id_prestation;
         $result['TEST']                      = ($this->test ? 'OUI' : 'NON');
 
         return ($result);
@@ -475,8 +475,8 @@ final class Mission extends DatabaseObject {
 
     public function setTest($test) // string or null
     {
-        if ($test === null || is_int($test) || is_bool($test) || is_string($test)) {
-                if ($test === null)
+        if ($test == null || is_int($test) || is_bool($test) || is_string($test)) {
+                if ($test == null)
                     $this->test = $test;
                 else if (is_string($test) && in_array(strtolower($test), ['oui', 'non']))
                     $this->test = (strtolower($test) === 'oui' ? 'OUI' : 'NON');
