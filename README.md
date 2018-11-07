@@ -2,8 +2,6 @@
 EVCM - CLASS
 ============
 
-the orm will be deleted
-
 ORM == Manager
 
 he manage all my class
