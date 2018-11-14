@@ -9,3 +9,7 @@ structure_class.php
 ~*
 test.php
 Faker
+Documentation
+*.py
+data
+getFormPrestaAuto.php

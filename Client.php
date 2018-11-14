@@ -1,22 +1,24 @@
 <?php
 
 final class Client extends DatabaseObject {
-    protected $id_cl = null;
-    protected $prenom_cl = null;
-    protected $nom_cl = null;
-    protected $entreprise_cl = null;
-    protected $mail_cl = null;
-    protected $adresse_cl = null;
-    protected $cp_cl = null;
-    protected $ville_cl = null;
-    protected $tel_cl = null;
-    protected $siret_cl = null;
-    protected $note_gen_cl = null;
-    protected $note_exigence_cl = null;
-    protected $type_abo_cl = null;
-    protected $date_debut_abo_cl = null;
-    protected $idclientzoho = null;
-    protected $test = null;
+    const __TYPE = __CLASS__;
+
+    protected $id_cl = NULL;
+    protected $prenom_cl = NULL;
+    protected $nom_cl = NULL;
+    protected $entreprise_cl = NULL;
+    protected $mail_cl = NULL;
+    protected $adresse_cl = NULL;
+    protected $cp_cl = NULL;
+    protected $ville_cl = NULL;
+    protected $tel_cl = NULL;
+    protected $siret_cl = NULL;
+    protected $note_gen_cl = NULL;
+    protected $note_exigence_cl = NULL;
+    protected $type_abo_cl = NULL;
+    protected $date_debut_abo_cl = NULL;
+    protected $idclientzoho = NULL;
+    protected $test = NULL;
 
     public function __construct(array $data)
     {
@@ -24,29 +26,28 @@ final class Client extends DatabaseObject {
             printLog(__METHOD__, 'Creating a new Client without primary key', true);
             throw new ClientException('Creating a new Client without primary key');
         }
-        $this->hydrate($data);
-        $this->id_cl = $data['id_cl'];
+        $this->_hydrate($data);
         $this->last_id = $data['id_cl'];
     }
 
     public function __destruct()
     {
-        $this->id_cl = null;
-        $this->prenom_cl = null;
-        $this->nom_cl = null;
-        $this->entreprise_cl = null;
-        $this->mail_cl = null;
-        $this->adresse_cl = null;
-        $this->cp_cl = null;
-        $this->ville_cl = null;
-        $this->tel_cl = null;
-        $this->siret_cl = null;
-        $this->note_gen_cl = null;
-        $this->note_exigence_cl = null;
-        $this->type_abo_cl = null;
-        $this->date_debut_abo_cl = null;
-        $this->idclientzoho = null;
-        $this->test = null;
+        $this->id_cl = NULL;
+        $this->prenom_cl = NULL;
+        $this->nom_cl = NULL;
+        $this->entreprise_cl = NULL;
+        $this->mail_cl = NULL;
+        $this->adresse_cl = NULL;
+        $this->cp_cl = NULL;
+        $this->ville_cl = NULL;
+        $this->tel_cl = NULL;
+        $this->siret_cl = NULL;
+        $this->note_gen_cl = NULL;
+        $this->note_exigence_cl = NULL;
+        $this->type_abo_cl = NULL;
+        $this->date_debut_abo_cl = NULL;
+        $this->idclientzoho = NULL;
+        $this->test = NULL;
     }
 
     public function toKey(string $value)
@@ -137,11 +138,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setEntreprise($entreprise)
+    public function setEntreprise($entreprise) // string or NULL
     {
-        if ($entreprise  !== null)
+        if (empty($entreprise))
+            $entreprise = NULL;
+        if ($entreprise  !== NULL)
             $entreprise = (string) $entreprise;
-        if ($entreprise === null || (is_string($entreprise) && strlen($entreprise) <= 50)) {
+        if ($entreprise === NULL || (is_string($entreprise) && strlen($entreprise) <= 50)) {
             $this->entreprise_cl = $entreprise;
             $this->historic[] = 'entreprise_cl';
             return (true);
@@ -160,11 +163,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setAdresse($adresse)
+    public function setAdresse($adresse) // string or NULL
     {
-        if ($adresse !== null)
+        if (empty($adresse))
+            $adresse = NULL;
+        if ($adresse !== NULL)
             $adresse = (string) $adresse;
-        if ($adresse === null || (is_string($adresse) && strlen($adresse) <= 100)) {
+        if ($adresse === NULL || (is_string($adresse) && strlen($adresse) <= 100)) {
             $this->adresse_cl = $adresse;
             $this->historic[] = 'adresse_cl';
             return (true);
@@ -172,11 +177,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setCp($cp)
+    public function setCp($cp) // string or NULL
     {
-        if ($cp !== null)
+        if (empty($cp))
+            $cp = NULL;
+        if ($cp !== NULL)
             $cp = (string) $cp;
-        if ($cp === null || (is_string($cp) && strlen($cp) <= 5)) {
+        if ($cp === NULL || (is_string($cp) && strlen($cp) <= 5)) {
             $this->cp_cl = $cp;
             $this->historic[] = 'cp_cl';
             return (true);
@@ -184,11 +191,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setVille($ville)
+    public function setVille($ville) // string or NULL
     {
-        if ($ville !== null)
+        if (empty($ville))
+            $ville = NULL;
+        if ($ville !== NULL)
             $ville = (string) $ville;
-        if ($ville === null || (is_string($ville) && strlen($ville) <= 100)) {
+        if ($ville === NULL || (is_string($ville) && strlen($ville) <= 100)) {
             $this->ville_cl = $ville;
             $this->historic[] = 'ville_cl';
             return (true);
@@ -196,11 +205,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setTel($tel)
+    public function setTel($tel) // string or int or NULL
     {
-        if ($tel !== null)
+        if (empty($tel))
+            $tel = NULL;
+        if ($tel !== NULL)
             $tel = (string) $tel;
-        if ($tel === null || (is_string($tel) && strlen($tel) <= 100 && preg_match('/^(((\(?\+([0-9]{2})|(00[0-9]{2}))\)?[ \-]{0,}0?[1-9])|(0[1-9][ \-]?))[ \-]{0,}([0-9]{2}[ \-]{0,}){4}$/', $tel))) {
+        if ($tel === NULL || (is_string($tel) && strlen($tel) <= 100 && preg_match('/^(((\(?\+([0-9]{2})|(00[0-9]{2}))\)?[ \-]{0,}0?[1-9])|(0[1-9][ \-]?))[ \-]{0,}([0-9]{2}[ \-]{0,}){4}$/', $tel))) {
             $this->tel_cl = $tel;
             $this->historic[] = 'tel_cl';
             return (true);
@@ -208,11 +219,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setSiret($siret)
+    public function setSiret($siret) // string or NULL
     {
-        if ($siret !== null)
+        if (empty($siret))
+            $siret = NULL;
+        if ($siret !== NULL)
             $siret = (string) $siret;
-        if ($siret === null || (is_string($siret) && strlen($siret) <= 100)) {
+        if ($siret === NULL || (is_string($siret) && strlen($siret) <= 100)) {
             $this->siret_cl = $siret;
             $this->historic[] = 'siret_cl';
             return (true);
@@ -234,19 +247,21 @@ final class Client extends DatabaseObject {
     public function setNoteExigence($note)
     {
         $note = floatval($note);
-        if ($note >= 0) {
+        if ($note >= 0 && $note <= 5) {
             $this->note_exigence_cl = $note;
-            $this->historic[] = 'note_gen_cl';
+            $this->historic[] = 'note_exigence_cl';
             return (true);
         }
         return (false);
     }
 
-    public function setTypeAbo($type)
+    public function setTypeAbo($type) // string or NULL
     {
-        if ($type !== null)
+        if (empty($type))
+            $type = NULL;
+        if ($type !== NULL)
             $type = (string) $type;
-        if ($type === null || (is_string($type) && strlen($type) <= 25)) {
+        if ($type === NULL || (is_string($type) && strlen($type) <= 25)) {
             $this->type_abo_cl = $type;
             $this->historic[] = 'type_abo_cl';
             return (true);
@@ -254,11 +269,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setDateDebutAbo($start)
+    public function setDateDebutAbo($start) // string or NULL
     {
-        if ($start !== null)
+        if (empty($start))
+            $start = NULL;
+        if ($start !== NULL)
             $start = (string) $start;
-        if ($start === null || (is_string($start) && strlen($start) <= 20)) {
+        if ($start === NULL || (is_string($start) && strlen($start) <= 20)) {
             $this->date_debut_abo_cl = $start;
             $this->historic[] = 'date_debut_abo_cl';
             return (true);
@@ -266,11 +283,13 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setIdclientzoho($id)
+    public function setIdclientzoho($id) // string or NULL
     {
-        if ($id !== null)
+        if (empty($id))
+            $id = NULL;
+        if ($id !== NULL)
             $id = (string) $id;
-        if ($id === null || (is_string($id) && strlen($id) <= 20)) {
+        if ($id === NULL || (is_string($id) && strlen($id) <= 20)) {
             $this->idclientzoho = $id;
             $this->historic[] = 'idclientzoho';
             return (true);
@@ -278,10 +297,12 @@ final class Client extends DatabaseObject {
         return (false);
     }
 
-    public function setTest($test)
+    public function setTest($test) // string or NULL
     {
-        if ($test == null || is_int($test) || is_bool($test) || is_string($test)) {
-                if ($test == null)
+        if (empty($test))
+            $test = NULL;
+        if ($test == NULL || is_int($test) || is_bool($test) || is_string($test)) {
+                if ($test == NULL)
                     $this->test = $test;
                 else if (is_string($test) && in_array(strtolower($test), ['oui', 'non']))
                     $this->test = (strtolower($test) === 'oui' ? 'OUI' : 'NON');

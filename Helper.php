@@ -1,32 +1,35 @@
 <?php
 
 final class Helper extends DatabaseObject {
-    protected $id_h = null;
-    protected $prenom_h = null;
-    protected $nom_h = null;
-    protected $photo_h = null;
-    protected $tel_h = null;
-    protected $date_naissance_h = null;
-    protected $mail_h = null;
-    protected $adresse_h = null;
-    protected $ville_h = null;
-    protected $cp_h = null;
-    protected $catego_h = null;
-    protected $cv_h = null;
-    protected $username_h = null;
-    protected $pwd_h = null;
-    protected $exp_h = null;
-    protected $grade_h = null;
-    protected $siret_h = null;
-    protected $notegen_h = null;
-    protected $note_savoir_faire_h = null;
-    protected $note_savoir_etre_h = null;
-    protected $description_h = null;
-    protected $autre_infos_h = null;
-    protected $lien_calendar_h = null;
-    protected $idhelperzoho = null;
-    protected $actif = null;
-    protected $ambassadeur = null;
+    const __TYPE = __CLASS__;
+
+    protected $id_h = NULL;
+    protected $prenom_h = NULL;
+    protected $nom_h = NULL;
+    protected $photo_h = NULL;
+    protected $tel_h = NULL;
+    protected $date_naissance_h = NULL;
+    protected $mail_h = NULL;
+    protected $adresse_h = NULL;
+    protected $ville_h = NULL;
+    protected $cp_h = NULL;
+    protected $catego_h = NULL;
+    protected $cv_h = NULL;
+    protected $username_h = NULL;
+    protected $pwd_h = NULL;
+    protected $exp_h = NULL;
+    protected $grade_h = NULL;
+    protected $siret_h = NULL;
+    protected $notegen_h = NULL;
+    protected $note_savoir_faire_h = NULL;
+    protected $note_savoir_etre_h = NULL;
+    protected $description_h = NULL;
+    protected $autre_infos_h = NULL;
+    protected $lien_calendar_h = NULL;
+    protected $idhelperzoho = NULL;
+    protected $actif = NULL;
+    protected $ambassadeur = NULL;
+    protected $test = NULL;
 
     public function __construct(array $data)
     {
@@ -34,44 +37,39 @@ final class Helper extends DatabaseObject {
             printLog(__METHOD__, 'Creating a new Helper without primary key', true);
             throw new HelperException('Creating a new Helper without primary key');
         }
-        $this->hydrate($data);
+        $this->_hydrate($data);
         $this->id_h = $data['id_h'];
         $this->last_id = $data['id_h'];
     }
 
     public function __destruct()
     {
-        $id_h = null;
-        $prenom_h = null;
-        $nom_h = null;
-        $photo_h = null;
-        $tel_h = null;
-        $date_naissance_h = null;
-        $mail_h = null;
-        $adresse_h = null;
-        $ville_h = null;
-        $cp_h = null;
-        $catego_h = null;
-        $cv_h = null;
-        $username_h = null;
-        $pwd_h = null;
-        $exp_h = null;
-        $grade_h = null;
-        $siret_h = null;
-        $notegen_h = null;
-        $note_savoir_faire_h = null;
-        $note_savoir_etre_h = null;
-        $description_h = null;
-        $autre_infos_h = null;
-        $lien_calendar_h = null;
-        $idhelperzoho = null;
-        $actif = null;
-        $ambassadeur = null;
-    }
-
-    public static function createQuadri($prenom, $nom)
-    {
-        return (strtoupper(substr($prenom, 0, 2)).strtoupper(substr($nom, 0, 2)));
+        $id_h = NULL;
+        $prenom_h = NULL;
+        $nom_h = NULL;
+        $photo_h = NULL;
+        $tel_h = NULL;
+        $date_naissance_h = NULL;
+        $mail_h = NULL;
+        $adresse_h = NULL;
+        $ville_h = NULL;
+        $cp_h = NULL;
+        $catego_h = NULL;
+        $cv_h = NULL;
+        $username_h = NULL;
+        $pwd_h = NULL;
+        $exp_h = NULL;
+        $grade_h = NULL;
+        $siret_h = NULL;
+        $notegen_h = NULL;
+        $note_savoir_faire_h = NULL;
+        $note_savoir_etre_h = NULL;
+        $description_h = NULL;
+        $autre_infos_h = NULL;
+        $lien_calendar_h = NULL;
+        $idhelperzoho = NULL;
+        $actif = NULL;
+        $ambassadeur = NULL;
     }
 
     public function toKey(string $value)
@@ -98,7 +96,7 @@ final class Helper extends DatabaseObject {
         $result['ID_Helper'] = $this->id_h;
         $result['Pr_nom'] = $this->prenom_h;
         $result['Name'] = $this->nom_h;
-        $result['Quadri'] = SELF::createQuadri($this->prenom_h, $this->nom_h);
+        $result['Quadri'] = createQuadri($this->prenom_h, $this->nom_h);
         $result['t_l_phone'] = $this->tel_h;
         $result['Email'] = $this->mail_h;
         $result['Adresse_rue'] = $this->adresse_h;
@@ -112,6 +110,7 @@ final class Helper extends DatabaseObject {
         if ($this->actif)
             $result['Etat'] = 'Actif';
         $result['Embassadeur'] = ($this->ambassadeur ? 'OUI' : 'NON');
+        $result['TEST'] = $this->test;
 
         return ($result);
     }
@@ -141,6 +140,7 @@ final class Helper extends DatabaseObject {
     public function getAutreInfos()      {return ($this->autre_infos_h);}
     public function getLienCalendar()    {return ($this->lien_calendar_h);}
     public function getIdHelperZoho()    {return ($this->idhelperzoho);}
+    public function getTest()            {return ($this->test);}
     public function getActif()           {return ($this->actif);}
     public function getAmbassadeur()     {return ($this->ambassadeur);}
 
@@ -171,11 +171,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setPhoto($photo) // string or null
+    public function setPhoto($photo) // string or NULL
     {
-        if ($photo !== null)
+        if (empty($photo))
+            $photo = NULL;
+        if ($photo !== NULL)
             $photo = (string) $photo;
-        if ($photo === null || (is_string($photo) && strlen($photo) <= 100)) {
+        if ($photo === NULL || (is_string($photo) && strlen($photo) <= 100)) {
             $this->photo_h = $photo;
             $this->historic[] = 'photo_h';
             return (true);
@@ -186,7 +188,7 @@ final class Helper extends DatabaseObject {
     public function setTel(string $tel)
     {
         $tel = (string) $tel;
-        if (strlen($tel) <= 30 && preg_match('/^(((\(?\+([0-9]{2})|(00[0-9]{2}))\)?[ \-]{0,}0?[1-9])|(0[1-9][ \-]?))[ \-]{0,}([0-9]{2}[ \-]{0,}){4}$/', $tel)) {
+        if ($tel === "" || (strlen($tel) <= 30 && preg_match('/^(((\(?\+([0-9]{2})|(00[0-9]{2}))\)?[ \-]{0,}0?[1-9])|(0[1-9][ \-]?))[ \-]{0,}([0-9]{2}[ \-]{0,}){4}$/', $tel))) {
             $this->tel_h = $tel;
             $this->historic[] = 'tel_h';
             return (true);
@@ -194,11 +196,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setDateNaissance($date) // string or null
+    public function setDateNaissance($date) // string or NULL
     {
-        if ($date !== null)
+        if (empty($date))
+            $date = NULL;
+        if ($date !== NULL)
             $date = (string) $date;
-        if ($date === null || (is_string($date) && preg_match('/[0-9]{4}[\- ]((0[1-9])|(1[0-2]))[\- ]((0[1-9])|([12][0-9])|[3[01]])/', $date))) {
+        if ($date === NULL || (is_string($date) && preg_match('/[0-9]{4}[\- ]((0[1-9])|(1[0-2]))[\- ]((0[1-9])|([12][0-9])|[3[01]])/', $date))) {
             $this->date_naissance_h = $date;
             $this->historic[] = 'date_naissance_h';
             return (true);
@@ -209,7 +213,7 @@ final class Helper extends DatabaseObject {
     public function setMail(string $mail)
     {
         $mail = (string) $mail;
-        if (strlen($mail) <= 80 && preg_match('/^[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', $mail)) {
+        if ($mail === "" || (strlen($mail) <= 80 && preg_match('/^[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', $mail))) {
             $this->mail_h = $mail;
             $this->historic[] = 'mail_h';
             return (true);
@@ -217,11 +221,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setAdresse($adresse) // string or null
+    public function setAdresse($adresse) // string or NULL
     {
-        if ($adresse !== null)
+        if (empty($adresse))
+            $adresse = NULL;
+        if ($adresse !== NULL)
             $adresse = (string) $adresse;
-        if ($adresse === null || (is_string($adresse) && strlen($adresse) <= 100)) {
+        if ($adresse === NULL || (is_string($adresse) && strlen($adresse) <= 100)) {
             $this->adresse_h = $adresse;
             $this->historic[] = 'adresse_h';
             return (true);
@@ -229,11 +235,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setVille($ville) // string or null
+    public function setVille($ville) // string or NULL
     {
-        if ($ville !== null)
+        if (empty($ville))
+            $ville = NULL;
+        if ($ville !== NULL)
             $ville = (string) $ville;
-        if ($ville === null || (is_string($ville) && strlen($ville) <= 50)) {
+        if ($ville === NULL || (is_string($ville) && strlen($ville) <= 50)) {
             $this->ville_h = $ville;
             $this->historic[] = 'ville_h';
             return (true);
@@ -241,11 +249,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setCp($codePostal) // string or null
+    public function setCp($codePostal) // string or NULL
     {
-        if ($codePostal !== null)
+        if (empty($codePostal))
+            $codePostal = NULL;
+        if ($codePostal !== NULL)
             $codePostal = (string) $codePostal;
-        if ($codePostal === null || (is_string($codePostal) && strlen($codePostal) <= 5)) {
+        if ($codePostal === NULL || (is_string($codePostal) && strlen($codePostal) <= 5)) {
             $this->cp_h = $codePostal;
             $this->historic[] = 'cp_h';
             return (true);
@@ -264,11 +274,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setCv($cv) // string or null
+    public function setCv($cv) // string or NULL
     {
-        if ($cv !== null)
+        if (empty($cv))
+            $cv = NULL;
+        if ($cv !== NULL)
             $cv = (string) $cv;
-        if ($cv === null || (is_string($cv) && strlen($cv) <= 100)) {
+        if ($cv === NULL || (is_string($cv) && strlen($cv) <= 100)) {
             $this->cv_h = $cv;
             $this->historic[] = 'cv_h';
             return (true);
@@ -276,11 +288,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setUsername($username) // string or null
+    public function setUsername($username) // string or NULL
     {
-        if ($username !== null)
+        if (empty($username))
+            $username = NULL;
+        if ($username !== NULL)
             $username = (string) $username;
-        if ($username === null || (is_string($username) && strlen($username) <= 25)) {
+        if ($username === NULL || (is_string($username) && strlen($username) <= 25)) {
             $this->username_h = $username;
             $this->historic[] = 'username_h';
             return (true);
@@ -291,7 +305,7 @@ final class Helper extends DatabaseObject {
     public function setPwd(string $pwd)
     {
         $pwd = (string) $pwd;
-        if ($pwd === null || (is_string($pwd) && strlen($pwd) <= 100)) {
+        if ($pwd === NULL || (is_string($pwd) && strlen($pwd) <= 100)) {
             $this->pwd_h = $pwd;
             $this->historic[] = 'pwd_h';
             return (true);
@@ -320,11 +334,13 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setSiret($siret) // string or null
+    public function setSiret($siret) // string or NULL
     {
-        if ($siret !== null)
+        if (empty($siret))
+            $siret = NULL;
+        if ($siret !== NULL)
             $siret = (string) $siret;
-        if ($siret === null || (is_string($siret) && strlen($siret) <= 14)) {
+        if ($siret === NULL || (is_string($siret) && strlen($siret) <= 14)) {
             $this->siret_h = $siret;
             $this->historic[] = 'siret_h';
             return (true);
@@ -332,56 +348,62 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setNotegen($note) // float or null
+    public function setNotegen($note) // float or NULL
     {
-        if ($note !== null)
+        if ($note !== NULL)
             $note = (float) $note;
         $this->notegen_h = $note;
         $this->historic[] = 'notegen_h';
         return (true);
     }
 
-    public function setNoteSavoirFaire($note) // float or null
+    public function setNoteSavoirFaire($note) // float or NULL
     {
-        if ($note !== null)
+        if ($note !== NULL)
             $note = (float) $note;
         $this->note_savoir_faire_h = $note;
         $this->historic[] = 'note_savoir_faire_h';
         return (true);
     }
 
-    public function setNoteSavoirEtre($note) // float or null
+    public function setNoteSavoirEtre($note) // float or NULL
     {
-        if ($note !== null)
+        if ($note !== NULL)
             $note = (float) $note;
         $this->note_savoir_etre_h = $note;
         $this->historic[] = 'note_savoir_etre_h';
         return (true);
     }
 
-    public function setDescription($description) // string or null
+    public function setDescription($description) // string or NULL
     {
-        if ($description !== null)
+        if (empty($description))
+            $description = NULL;
+        if ($description !== NULL)
             $description = (string) $description;
         $this->description_h = $description;
         $this->historic[] = 'description_h';
         return (true);
     }
 
-    public function setAutreInfos($info) // string or null
+    public function setAutreInfos($info) // string or NULL
     {
-        if ($info !== null)
+        if (empty($info))
+            $info = NULL;
+        if ($info !== NULL)
             $info = (string) $info;
         $this->autre_infos_h = $info;
         $this->historic[] = 'autre_infos_h';
         return (true);
     }
 
-    public function setLienCalendar($link) // string or null
+    public function setLienCalendar($link) // string or NULL
     {
-        if ($link !== null)
+        if (empty($link))
+            $link = NULL;
+        if ($link !== NULL)
             $link = (string) $link;
-        if ($link === null || (is_string($link) && strlen($link) <= 255)) {
+        if ($link === NULL || (is_string($link) && strlen($link) <= 255)) {
             $this->lien_calendar_h = $link;
             $this->historic[] = 'lien_calendar_h';
             return (true);
@@ -389,14 +411,33 @@ final class Helper extends DatabaseObject {
         return (false);
     }
 
-    public function setIdhelperzoho($id) // int or null
+    public function setIdhelperzoho($id) // int or NULL
     {
-        if ($id !== null)
+        if (empty($id))
+            $id = NULL;
+        if ($id !== NULL)
             $id = (int) $id;
-        if ($id === null || $id >= 0) {
+        if ($id === NULL || $id >= 0) {
             $this->idhelperzoho = $id;
             $this->historic[] = 'idhelperzoho';
             return (true);
+        }
+        return (false);
+    }
+
+    public function setTest($test) // string or INTEGER or boolean (or null but null is transformed to 'NON')
+    {
+        if ($test == null || is_int($test) || is_bool($test) || is_string($test)) {
+                if ($test == null)
+                    $this->test = $test;
+                else if (is_string($test) && in_array(strtolower($test), ['oui', 'non']))
+                    $this->test = (strtolower($test) === 'oui' ? 'OUI' : 'NON');
+                else {
+                    $test = (bool) $test;
+                    $this->test = ($test ? 'OUI' : 'NON');
+                }
+                $this->historic[] = 'test';
+                return (true);
         }
         return (false);
     }
