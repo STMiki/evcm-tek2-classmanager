@@ -15,8 +15,9 @@
  *
  */
 
- const ENV = 'test';
+ const ENV = 'local-test';
  const VERSION = '1.0.0';
+ const STRICT = false;
 
 /* --------------------------------------------
  * ---  Load automaticaly the class needed  ---
@@ -33,6 +34,7 @@ spl_autoload_register('classAutoLoad');
 
 require_once('log.php');
 require_once('exception.php');
+include_once('function.php');
 
 /*
  * TODO: faire la descrition de cette class
@@ -46,20 +48,53 @@ abstract class DatabaseObject {
     abstract public function toKey(string $key);
     abstract public function transformForZoho();
 
-    final public function getLastId() {return ($this->last_id);}
-    final public function getHistoric() {return ($this->historic);}
+    final public function __toString()    {return ($this::__TYPE.': '.$this->getId());}
+    final public function getLastId()     {return ($this->last_id);}
+    final public function getHistoric()   {return ($this->historic);}
     final public function resetHistoric() {$this->historic = Array();}
 
-    final protected function hydrate(array $data)
+    final public function __call($name, $arguments)
+    {
+        $argumentsText = implode(", ", $arguments);
+        $msg = "Trying to call {$name} ({$argumentsText}) which is undefined is this class: ".$this::__TYPE;
+        if (STRICT == true) {
+            printLog(__METHOD__, $msg, 1);
+            throw new ORMException($msg);
+        } else {
+            printLog(__METHOD__, $msg, 2);
+        }
+        return (false);
+    }
+
+    final protected function _hydrate(array $data)
+    {
+        $this->hydrate($data);
+        $this->resetHistoric();
+    }
+
+    final public function hydrate(array $data)
     {
         foreach($data as $key => $value) {
             $method = 'set'.$this->toKey($key);
             if (!$this->$method($value)) {
-                printLog(__METHOD__, 'A set value from database can\'t be set: '.$method.'('.$value.')', 2);
+                switch ($this::__TYPE) {
+                    case 'Helper':
+                        $id = $data['id_h'];
+                        break;
+                    case 'Client':
+                        $id = $data['id_cl'];
+                        break;
+                    case 'Mission':
+                        $id = $data['id_m'];
+                        break;
+                    default:
+                        $id = 'Unknow';
+                        break;
+                }
+                printLog(__METHOD__, 'A set value from database can\'t be set from '.$this::__TYPE.'('.$id.'): '.$method.'('.$value.')', 2);
                 $this->$key = $value;
             }
         }
-        $this->resetHistoric();
     }
 }
 
@@ -94,6 +129,11 @@ final class ORM {
         $this->zoho = null;
     }
 
+    public function getZoho()
+    {
+        return ($this->zoho );
+    }
+
     public function getDatabase()
     {
         return ($this->db);
@@ -107,11 +147,11 @@ final class ORM {
 
     public function filtre(array $data)
     {
-         foreach ($data as $key => $value) {
-             if (!is_string($key))
-                 unset($data[$key]);
-         }
-         return ($data);
+        foreach ($data as $key => $value) {
+            if (!is_string($key))
+                unset($data[$key]);
+        }
+        return ($data);
     }
 
     /*************************************/
@@ -245,6 +285,19 @@ final class ORM {
     /**************************************/
 
     /* ---- Mission related function ----- */
+    public function createRef(Client $client)
+    {
+        $ref = date('ymdH').'-'.createQuadri($client->getPrenom(), $client->getNom()).'-';
+
+        $req = $this->db->prepare('SELECT MAX(CONVERT(SUBSTRING(ref_m, 15), UNSIGNED INTEGER)) as maximum from MISSION where ref_m like ":ref%"');
+        $req->bindParam(':ref', $ref);
+        $req->execute();
+        $maxArr = $req->fetch();
+        $ref .= (string) (isset($maxArr['maximum']) ? $maxArr['maximum'] + 1 : 1);
+
+        return ($ref);
+    }
+
     public function createMissionFromIdClient($id, bool $auto=false, $ref=NULL)
     {
         $client = $this->getClientById($id);
@@ -257,29 +310,11 @@ final class ORM {
 
     public function createMissionFromClient(Client $client, bool $auto=false, $ref=NULL)
     {
-        if (!isset($param['auto']) || !isset($param['ref'])) {
-            printLog(__METHOD__, 'Parameter without needed value.', 2);
-            return (NULL);
-        }
-        $ref = $param['ref'];
-        $auto = $param['auto'];
         if ($ref == NULL) {
-            $ref = date('ymdH').'-'.Helper::createQuadri($client->getPrenom(), $client->getNom()).'-';
-
-            $req = $this->db->prepare('SELECT MAX(CONVERT(SUBSTRING(ref_m, 15), UNSIGNED INTEGER)) as maximum from MISSION where ref_m like ":ref%"');
-            $req->bindParam(':ref', $ref);
-            $req->execute();
-            $maxArr = $req->fetch();
-            $ref .= (string) (isset($maxArr['maximum']) ? $maxArr['maximum'] + 1 : 1);
+            $ref = $this->createRef($client);
         }
         $data = ['ref_m' => $ref, 'id_cl' => $client->getId()];
         $data['id_m'] = $this->createMissionId($auto);
-        try {
-            $mission = new Mission($this->filtre($data));
-        } catch (MissionException $e) {
-            printLog(__METHOD__, 'Cannot create a missoin from invalid data:\n'.print_r($data, true), true);
-            throw new ORMException('Cannot create a mission from invalid data', $e->getCode(), $e);
-        }
 
         $req = $this->db->prepare('INSERT INTO MISSION (id_m, ref_m, id_cl) VALUE (:id_m, :ref_m, :id_cl);');
         $req->bindValue(':id_m', $data['id_m']);
@@ -287,7 +322,32 @@ final class ORM {
         $req->bindValue(':id_cl', $data['id_cl']);
         $req->execute();
 
-        //$this->zoho->insertToCrm('Prestations', $mission->transformForZoho());
+        $mission = new Mission($data);
+
+        try {
+            if (!$this->zoho->insertToCRM('Prestations', $mission->transformForZoho()))
+                throw new ZohoException("Error Processing Request");
+        } catch (ZohoException $e) {
+            printLog(__METHOD__, 'Error on inserting to zoho, cancelling...', 1);
+
+        } catch (Exception $e) {
+            printLog(__METHOD__, 'Unknow error trying to insert data in zoho, cancelling...', 1);
+        } finally {
+            if (isset($e)) {
+                if (ENV == 'local-test')
+                    echo print_r($data, true);
+                else if (ENV != 'Production')
+                    printLog(__METHOD__, print_r($data, true), 2);
+                else
+                    printLog(__METHOD__, print_r(array_keys($data), true), 2);
+
+                $req = $this->db->prepare('DELETE FROM MISSON WHERE id_cl=:id;');
+                $req->bindParam(':id', $id);
+                $req->execute();
+
+                return (false);
+            }
+        }
 
         return ($mission);
     }
@@ -311,8 +371,45 @@ final class ORM {
     }
 
     /* ---- Client related function ---- */
+    public function createOrUpdateClientFromArray(array $data)
+    {
+        $sql = "SELECT id_cl FROM CLIENT WHERE mail_cl = :mail OR (prenom_cl = :prenom AND nom_cl = :nom) OR id_cl = :id;";
+
+        $req = $this->db->prepare($sql);
+        $req->bindValue(':mail',   (isset($data['mail_cl'])   ? $data['mail_cl']   : ''));
+        $req->bindValue(':prenom', (isset($data['prenom_cl']) ? $data['prenom_cl'] : ''));
+        $req->bindValue(':nom',    (isset($data['nom_cl'])    ? $data['nom_cl']    : ''));
+        $req->bindValue(':id',     (isset($data['id_cl'])     ? $data['id_cl']     : ''));
+        $req->execute();
+
+        if ($req->rowCount() == 0)
+            return ($this->createClientFromArray($data));
+        else {
+            $id = $req->fetch()[0];
+            $data['id_cl'] = $îd;
+
+            $client = $this->getClientById($id);
+
+            $client->hydrate($data);
+
+            if ($this->updateClient($client));
+                return ($client);
+            return (false);
+        }
+    }
+
     public function createClientFromArray(array $data)
     {
+        if (isset($data['id_cl'])) {
+            if (STRICT == true) {
+                printLog(__METHOD__, 'Creating a client from an array with an existing id.', 1);
+                throw new ORMException('Creating a client from an array with an existing id.');
+            } else {
+                printLog(__METHOD__, 'Creating a client from an array with an existing id.', 2);
+                unset($data['id_cl']);
+            }
+        }
+
         $sql = "insert into `CLIENT` (";
         $val = '';
 
@@ -328,20 +425,99 @@ final class ORM {
 
         $req = $this->bd->prepare($sql);
 
-        foreach ($data as $key => $value) {
+        foreach ($data as $key => $value)
             $req->bindValue(':'.$key, $value);
-        }
 
         $req->execute();
 
-        if ($req->errorCode() === '00000')
-            return (true);
-        return (false);
+        if ($req->errorCode() !== '00000') {
+            printLog(__METHOD__, 'insert client failled', 2);
+            return (false);
+        }
+
+        printLog(__METHOD__, 'insert client successfull');
+
+        $req = $this->db->query("SELECT LAST_INSERT_ID() AS id");
+        $data = $req->fetch();
+        $id = $req['id'];
+
+        $data['id_cl'] = $id;
+
+        $client = new Client($data);
+
+        try {
+            if (!$this->zoho->insertToCRM('Contacts', $client->transformForZoho()))
+                throw new ZohoException("Error Processing Request");
+        } catch (ZohoException $e) {
+            printLog(__METHOD__, 'Error on inserting to zoho, cancelling...', 1);
+
+        } catch (Exception $e) {
+            printLog(__METHOD__, 'Unknow error trying to insert data in zoho, cancelling...', 1);
+        } finally {
+            if (isset($e)) {
+                if (ENV == 'local-test')
+                    echo print_r($data, true);
+                else if (ENV != 'Production')
+                    printLog(__METHOD__, print_r($data, true), 2);
+                else
+                    printLog(__METHOD__, print_r(array_keys($data), true), 2);
+
+                $req = $this->db->prepare('DELETE FROM CLIENT WHERE id_cl=:id;');
+                $req->bindParam(':id', $id);
+                $req->execute();
+
+                $id = ((int) $id) - 1;
+
+                $req = $this->db->prepare('ALTER TABLE CLIENT AUTO_INCREMENT = :id');
+                $req->bindParam(':id', $id);
+                $req->execute();
+
+                return (false);
+            }
+        }
+
+        return ($client);
     }
 
     /* ---- Helper related function ---- */
+    public function createOrUpdateHelperFromArray(array $data)
+    {
+        $sql = "SELECT id_h FROM HELPER WHERE mail_h = :mail OR (prenom_h = :prenom AND nom_h = :nom) OR id_h = :id";
+
+        $req = $this->db->prepare($sql);
+        $req->bindValue(':mail',   (isset($data['mail_cl'])   ? $data['mail_cl']   : ''));
+        $req->bindValue(':prenom', (isset($data['prenom_cl']) ? $data['prenom_cl'] : ''));
+        $req->bindValue(':nom',    (isset($data['nom_cl'])    ? $data['nom_cl']    : ''));
+        $req->execute();
+
+        if ($req->rowCount() == 0)
+            return ($this->createHelperFromArray($data));
+        else {
+            $id = $req->fetch()[0];
+            $data['id_h'] = $îd;
+
+            $helper = $this->getHelperById($id);
+
+            $helper->hydrate($data);
+
+            if ($this->updateClient($helper));
+                return ($helper);
+            return (false);
+        }
+    }
+
     public function createHelperFromArray(array $data)
     {
+        if (isset($data['id_h'])) {
+            if (STRICT == true) {
+                printLog(__METHOD__, 'Creating a helper from an array with an existing id.', 1);
+                throw new ORMException('Creating a helper from an array with an existing id.');
+            } else {
+                printLog(__METHOD__, 'Creating a helper from an array with an existing id.', 2);
+                unset($data['id_h']);
+            }
+        }
+
         $sql = "insert into `HELPER` (";
         $val = '';
 
@@ -353,9 +529,9 @@ final class ORM {
         $val = substr($val, 0, strlen($val) - 2);
         $sql .= $val.');';
 
-        printLog(__METHOD__, 'insert helper: sql request: '.$sql);
+        printLog(__METHOD__, 'inserting helper: sql request: '.$sql);
 
-        $req = $this->bd->prepare($sql);
+        $req = $this->db->prepare($sql);
 
         foreach ($data as $key => $value) {
             $req->bindValue(':'.$key, $value);
@@ -363,9 +539,52 @@ final class ORM {
 
         $req->execute();
 
-        if ($req->errorCode() === '00000')
-            return (true);
-        return (false);
+        if ($req->errorCode() !== '00000') {
+            printLog(__METHOD__, 'insert helper failled', 2);
+            return (false);
+        }
+
+        printLog(__METHOD__, 'insert helper successfull');
+
+        $req = $this->db->query("SELECT * FROM HELPER WHERE id_h = LAST_INSERT_ID();");
+        $data = $req->fetch();
+
+        $id = $data['id_h'];
+
+        $helper = new Helper($data);
+
+        try {
+            if (!$this->zoho->insertToCRM('Helpers', $helper->transformForZoho()))
+                throw new ZohoException("Error Processing Request");
+        } catch (ZohoException $e) {
+            printLog(__METHOD__, 'Error on inserting to zoho, cancelling...', 1);
+
+        } catch (Exception $e) {
+            printLog(__METHOD__, 'Unknow error trying to insert data in zoho, cancelling...', 1);
+        } finally {
+            if (isset($e)) {
+                if (ENV == 'local-test')
+                    echo print_r($data, true);
+                else if (ENV != 'Production')
+                    printLog(__METHOD__, print_r($data, true), 2);
+                else
+                    printLog(__METHOD__, print_r(array_keys($data), true), 2);
+
+                $req = $this->db->prepare('DELETE FROM HELPER WHERE id_h=:id;');
+                $req->bindParam(':id', $id);
+                $req->execute();
+
+                $id = ((int) $id) - 1;
+
+                $req = $this->db->prepare('ALTER TABLE HELPER AUTO_INCREMENT = :id');
+                $req->bindParam(':id', $id);
+                $req->execute();
+
+                return (false);
+            }
+        }
+
+        return ($helper);
     }
 
     /**************************************/
@@ -424,7 +643,25 @@ final class ORM {
         $dataCRM = $this->zoho->getFromCRM('Prestations', 'Name', $data['Name']);
         $data['id'] = $dataCRM['id'];
 
-        return ($this->zoho->updateToCRM('Prestations', $data));
+        try {
+            if (!$this->zoho->updateToCRM('Prestations', $data))
+                throw new ZohoException("Error Processing Request");
+        } catch (ZohoException $e) {
+            printLog(__METHOD__, 'Error on updating to zoho, cancelling...', 1);
+        } catch (Exception $e) {
+            printLog(__METHOD__, 'Unknow error trying to update data in zoho, cancelling...', 1);
+        } finally {
+            if (isset($e)) {
+                if (ENV != 'Production')
+                    printLog(__METHOD__, print_r($data, true), 2);
+                else
+                    printLog(__METHOD__, print_r(array_keys($data), true), 2);
+
+                return (false);
+            }
+        }
+
+        return (true);
     }
 
     public function updateMission(Mission $mission)
@@ -492,7 +729,25 @@ final class ORM {
         $dataCRM = $this->zoho->getFromCRM('Helpers', 'ID_Helper', $data['ID_Helper']);
         $data['id'] = $dataCRM['id'];
 
-        return ($this->zoho->updateToCRM('Helpers', $data));
+        try {
+            if (!$this->zoho->updateToCRM('Helpers', $data))
+                throw new ZohoException("Error Processing Request");
+        } catch (ZohoException $e) {
+            printLog(__METHOD__, 'Error on updating to zoho, cancelling...', 1);
+        } catch (Exception $e) {
+            printLog(__METHOD__, 'Unknow error trying to update data in zoho, cancelling...', 1);
+        } finally {
+            if (isset($e)) {
+                if (ENV != 'Production')
+                    printLog(__METHOD__, print_r($data, true), 2);
+                else
+                    printLog(__METHOD__, print_r(array_keys($data), true), 2);
+
+                return (false);
+            }
+        }
+
+        return (true);
     }
 
     public function updateHelper(Helper $helper)
