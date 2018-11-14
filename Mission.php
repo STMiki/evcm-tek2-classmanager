@@ -12,6 +12,8 @@ require_once('log.php');
  *
  */
 final class Mission extends DatabaseObject {
+    const __TYPE = __CLASS__;
+
     protected $ref_m = null;
     protected $id_m = null;
     protected $precisions_m = null;
@@ -47,7 +49,7 @@ final class Mission extends DatabaseObject {
             printLog(__METHOD__, 'Creating a new Mission without primary key', true);
             throw new MissionException('Creating a new Mission without primary key');
         }
-        $this->hydrate($data);
+        $this->_hydrate($data);
         $this->last_id = $data['id_m'];
     }
 
@@ -170,6 +172,8 @@ final class Mission extends DatabaseObject {
 
     public function setId($id) // string or null
     {
+        if (empty($id))
+            $id = NULL;
         if (is_int($id))
             $id = (string) $id;
         if ($id === null || (is_string($id) && preg_match('/^s?[1-9][0-9]{0,}$/', $id) && strlen($id) <= 20)) {
@@ -182,6 +186,8 @@ final class Mission extends DatabaseObject {
 
     public function setPrecisions($precisions) // string or null
     {
+        if (empty($precisions))
+            $precisions = NULL;
         if ($precisions !== null)
             $precisions = (string) $precisions;
         if ($precisions === null || is_string($precisions)) {
@@ -227,6 +233,8 @@ final class Mission extends DatabaseObject {
 
     public function setDateDemande($date) // string or null
     {
+        if (empty($date))
+            $date = NULL;
         if ($date !== null)
             $date = (string) $date;
         if ($date === null || (is_string($date) && preg_match('/^([0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12][0-9])|(3[01]))\ (([01][0-9])|(2[0-3])):[0-5][0-9]:[0-5][0-9])$/', $date))) {
@@ -239,6 +247,8 @@ final class Mission extends DatabaseObject {
 
     public function setDateSouhaitee($date) // string or null
     {
+        if (empty($date))
+            $date = NULL;
         if ($date !== null)
             $date = (string) $date;
         if ($date === null || (is_string($date) && preg_match('/^([0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12][0-9])|(3[01])) (([01][0-9])|(2[0-3])):[0-5][0-9]:[0-5][0-9])$/', $date))) {
@@ -251,6 +261,8 @@ final class Mission extends DatabaseObject {
 
     public function setDateIntervention($date) // string or null
     {
+        if (empty($date))
+            $date = NULL;
         if ($date !== null)
             $date = (string) $date;
         if ($date === null || (is_string($date) && preg_match('/^([0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12][0-9])|(3[01])) (([01][0-9])|(2[0-3])):[0-5][0-9]:[0-5][0-9])$/', $date))) {
@@ -263,6 +275,8 @@ final class Mission extends DatabaseObject {
 
     public function setDateFin($date) // string or null
     {
+        if (empty($date))
+            $date = NULL;
         if ($date !== null)
             $date = (string) $date;
         if ($date === null || (is_string($date) && preg_match('/^([0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12][0-9])|(3[01])) (([01][0-9])|(2[0-3])):[0-5][0-9]:[0-5][0-9])$/', $date))) {
@@ -319,6 +333,8 @@ final class Mission extends DatabaseObject {
 
     public function setComBil($commentaire) // string or null
     {
+        if (empty($commentaire))
+            $commentaire = NULL;
         if ($commentaire !== null)
             $commentaire = (string) $commentaire;
         if ($commentaire === null || is_string($commentaire)) {
@@ -331,6 +347,8 @@ final class Mission extends DatabaseObject {
 
     public function setSignatureBil($url) // string(url) or null
     {
+        if (empty($url))
+            $url = NULL;
         if ($url !== null)
             $url = (string) $url;
         if ($url === null || (is_string($url) && preg_match("/^[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)$/", $url) && strlen($url) <= 150)) {
@@ -415,6 +433,8 @@ final class Mission extends DatabaseObject {
 
     public function setIdHelper($id) // int or null
     {
+        if (empty($id))
+            $id = NULL;
         if ($id !== null)
             $id = (int) $id;
         if ($id === null || is_int($id)) {
@@ -427,6 +447,8 @@ final class Mission extends DatabaseObject {
 
     public function setIdCLient($id) // int or null
     {
+        if (empty($id))
+            $id = NULL;
         if ($id !== null)
             $id = (int) $id;
         if ($id === null || is_int($id)) {
@@ -439,6 +461,8 @@ final class Mission extends DatabaseObject {
 
     public function setForfait($forfait) // string or null
     {
+        if (empty($forfait))
+            $forfait = NULL;
         if ($forfait !== null)
             $forfait = (string) $forfait;
         if ($forfait === null || (is_string($forfait) && strlen($forfait) <= 1)) {
@@ -449,8 +473,10 @@ final class Mission extends DatabaseObject {
         return (false);
     }
 
-    public function setIdPrestation($id)
+    public function setIdPrestation($id) // string or null
     {
+        if (empty($id))
+            $id = NULL;
         if($id !== null)
             $id = (string) $id;
         if ($id === null || (is_string($id) && preg_match('/^[0-9]{3}(\-[0-9]{3}){0,}$/', $id))) {
@@ -463,6 +489,8 @@ final class Mission extends DatabaseObject {
 
     public function setCommentaire($commentaire) // string or null
     {
+        if (empty($commentaire))
+            $commentaire = NULL;
         if ($commentaire !== null)
             $commentaire = (string) $commentaire;
         if ($commentaire === null || is_string($commentaire)) {
