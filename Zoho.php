@@ -21,10 +21,11 @@ require_once('log.php');
  */
 final class Zoho {
 
-    private $api_domain;
-    private $defaultHeader;
-    private $db;
-    private $token;
+    private $api_domain = null;
+    private $defaultHeader = null;
+    private $db = null;
+    private $token = null;
+    private $expiration_time = null;
     private $historic = array();
 
     /* ----- CRM ----- */
@@ -45,21 +46,75 @@ final class Zoho {
         $this->db = null;
     }
 
-    private function getCleApi()
+    private function refresh_token()
     {
-        return (true); // TODO: remove this for test
-        if (!empty($this->token))
-            return;
-        $req = $this->db->query('SELECT `access_token_zoho`, `api_domain_zoho` FROM `CLE`;');
+        $req = $this->db->query("SELECT accounts_domain_zoho, client_id_zoho, client_secret_zoho, refresh_token_zoho FROM CLE;");
         $data = $req->fetch();
-        $this->token = $data['access_token_zoho'];
-        $this->api_domain = $data['api_domain_zoho'];
-        $this->defaultHeader = [
-            'headers' => [
-                'Authorization' => 'Bearer '.$this->token,
-                'Cache-Control' => 'no-cache'
+
+        $url = $data['accounts_domain_zoho']."/oauth/v2/token";
+
+        $client_id = $data['client_id_zoho'];
+        $client_secret = $data['client_secret_zoho'];
+        $refresh_token = $data['refresh_token_zoho'];
+
+        $grant_type = 'refresh_token';
+
+        $header = [
+            'form_params' => [
+                'client_id' => $client_id,
+                'client_secret' => $client_secret,
+                'refresh_token' => $refresh_token,
+                'grnt_type' => $grant_type
             ]
         ];
+
+        $client = new \GuzzleHttp\Client();
+
+        $result = $client->request('POST', $url, $header);
+
+        if ($resultat->getStatusCode() == 200) {
+            $json_content = json_decode($resultat->getBody(), true);
+
+            if (isset($json_content['access_token'])) {
+                $access_token = $json_content['access_token'];
+
+                $this->token = $access_token;
+                $this->expiration_token = (new \Datetime())->getTimestamp() + (50 * 60); // 50 minutes * 60 secondes
+
+                $req = $this->db->prepare('UPDATE CLE SET access_token_zoho = :token, expiration_zoho = NOW() + INTERVAL 50 MINUTE WHERE id = 1;');
+                $req->bindParam(':token', $access_token);
+                $req->execute();
+
+                return (true);
+            } else {
+                printLog(__METHOD__, $res->getBody(), 2);
+            }
+        } else {
+            printLog(__METHOD__, "error refreshing token: ".$resultat->getStatusCode(), 1);
+        }
+    }
+
+    private function getCleApi()
+    {
+        if ($this->expiration_token == NULL || $this->token == NULL) {
+
+            $req = $this->db->query('SELECT `access_token_zoho`, `api_domain_zoho`, expiration_zoho FROM `CLE`;');
+            $data = $req->fetch();
+            $this->expiration_token = (new \Datetime($data["expiration_zoho"]))->getTimestamp();
+            $this->token = $data['access_token_zoho'];
+            $this->api_domain = $data['api_domain_zoho'];
+            $this->defaultHeader = [
+                'headers' => [
+                    'Authorization' => 'Bearer '.$this->token,
+                    'Cache-Control' => 'no-cache'
+                ]
+            ];
+        }
+
+        $now = (new \Datetime())->getTimestamp();
+
+        if ($now >= $this->expiration_token)
+            $this->refresh_token();
     }
 
     private function getConstants()
@@ -89,30 +144,56 @@ final class Zoho {
         return ($result);
     }
 
-    /* --------------- C  R  M --------------- */
-    public function getFromCRM($module, string $criteria, string $valueOfCriteria, bool $mandatory=false)
+    private function gestionRequest($method, $url, $header = NULL)
     {
-        return (true); // TODO: remove this for test
-        if (!$this->isModule($module)) {
-            printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
-            throw new ZohoException('Module "'.$module.'" not found.');
+        if ($header == NULL)
+            $header = $this->defaultHeader;
+        $method = strtoupper($method);
+        $defaultMethod = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'COPY', 'HEAD', 'OPTIONS', 'LINK', 'UNLINK', 'PURGE', 'LOCK', 'UNLOCK', 'PROPFIND', 'VIEW'];
+        if (array_search($method, $defaultMethod) === false) {
+            printLog(__METHOD__, "Invalid method: {$method}", 1);
+            throw new ORMException("Invalid method request: {$method}");
         }
-        $this->getCleApi();
-        if ($mandatory === true)
-            $url = $this->api_domain.'crm/v2/'.$module.'/search?'.$criteria.'='.$valueOfCriteria;
-        else
-            $url = $this->api_domain.'crm/v2/'.$module.'/search?criteria=%28'.$criteria.':equals:'.$valueOfCriteria.'%29';
 
         $client = new \GuzzleHttp\Client();
 
         try {
-            $res = $client->request('GET', $url, $this->defaultHeader);
+            $res = $client->request($method, $url, $header);
         } catch (Exception $e) {
-            if ($res->getStatusCode() == 404) {
-                printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
-                throw new ZohoException('Url invalid.');
+            echo "url: {$url}\n";
+            if (isset($res)) {
+                if ($res->getStatusCode() == 404) {
+                    printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
+                    throw new ZohoException('Url invalid.');
+                }
+            } else {
+                printLog(__METHOD__, "Error guzzlehttp: {$e->getMessage()}\nurl: {$url}", 1);
+                throw $e;
             }
         }
+
+        return ($res);
+    }
+
+    /* --------------- C  R  M --------------- */
+    public function getFromCRM($module, string $criteria, string $valueOfCriteria, bool $mandatory=false)
+    {
+        if (!$this->isModule($module)) {
+            printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
+            throw new ZohoException('Module "'.$module.'" not found.');
+        }
+
+        $this->getCleApi();
+
+        if ($mandatory)
+            $criteria = strtolower($criteria);
+
+        if ($mandatory === true)
+            $url = $this->api_domain.'/crm/v2/'.$module.'/search?'.$criteria.'='.$valueOfCriteria;
+        else
+            $url = $this->api_domain.'/crm/v2/'.$module.'/search?criteria=%28'.$criteria.':equals:'.$valueOfCriteria.'%29';
+
+        $res = $this->gestionRequest('GET', $url);
 
         if ($res->getStatusCode() == 204) {
             printLog(__METHOD__, 'Value "'.$valueOfCriteria.'" not found for "'.$value.'".', true);
@@ -140,7 +221,6 @@ final class Zoho {
     /* /!\ --------= IT TAKE AN ETERNITY TO RESPOND =-------- /!\ */
     public function getAllFromCRM($module)
     {
-        return (true); // TODO: remove this for test
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
@@ -149,16 +229,7 @@ final class Zoho {
 
         $url = $this->api_domain.'/crm/v2/'.$module;
 
-        $client = new \GuzzleHttp\Client();
-
-        try {
-            $res = $client->request('GET', $url, $this->defaultHeader);
-        } catch (Exception $e) {
-            if ($res->getStatusCode() == 404) {
-                printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
-                throw new ZohoException('Url invalid.');
-            }
-        }
+        $res = $this->gestionRequest('GET', $url);
 
         if ($res->getStatusCode() != 200) {
             printLog(__METHOD__, 'Unexpected error (id: 01):'.
@@ -177,9 +248,19 @@ final class Zoho {
         return (json_decode($res->getBody(), true)['data']);
     }
 
+    public function updateToCRM_NoId($module, array $data, string $criteria, string $value, bool $mandatory=false)
+    {
+        $dataCRM = $this->getFromCRM($module, $criteria, $value, $mandatory);
+        if ($dataCRM == false)
+            return (false);
+
+        $data['id'] = $dataCRM['id'];
+
+        return ($this->updateToCRM($module, $data));
+    }
+
     public function updateToCRM($module, array $data)
     {
-        return (true); // TODO: remove this for test
         if (!isset($data['id'])) {
             printLog(__METHOD__, 'unknow id: '.$data['id'], true);
             throw new ZohoException('Id not found');
@@ -190,8 +271,7 @@ final class Zoho {
         }
         $this->getCleApi();
 
-        $client = new \GuzzleHttp\Client();
-        $url = $api_domain.'crm/v2/'.$module;
+        $url = $this->api_domain.'/crm/v2/'.$module;
         $header = [
             'headers' => [
                 'Authorization' => 'Bearer '.$this->token,
@@ -205,20 +285,11 @@ final class Zoho {
             ]
         ];
 
-        try {
-           $res = $client->request('PUT', $url, $header);
-        } catch (Exception $e) {
-            if ($res->getStatusCode() == 404) {
-                printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
-                throw new ZohoException('Url invalid.');
-            }
-        }
+        $res = $this->gestionRequest('PUT', $url, $header);
 
         if ($res->getStatusCode() != 200) {
             printLog(__METHOD__, 'Unexpected error (id: 03):'.
                                 'module : "'.$module.'"\n'.
-                                'critere: "'.$criteria.'"\n'.
-                                'value  : "'.$value.'"\n'.
                                 'URL    : "'.$url.'"\n'.
                                 'code   : "'.$res->getStatusCode().'"\n'.
                                 'body   : "'.$res->getBody().'"', true);
@@ -238,15 +309,13 @@ final class Zoho {
 
     public function insertToCRM($module, array $data)
     {
-        return (true); // TODO: remove this for test
         if (!$this->isModule($module)) {
             printLog(__METHOD__, 'the module "'.$module.'" is not found.', true);
             throw new ZohoException('Module "'.$module.'" not found.');
         }
         $this->getCleApi();
 
-        $client = new \GuzzleHttp\Client();
-        $url = $api_domain.'crm/v2/'.$module;
+        $url = $this->api_domain.'/crm/v2/'.$module;
         $header = [
             'headers' => [
                 'Authorization' => 'Bearer '.$this->token,
@@ -260,27 +329,21 @@ final class Zoho {
             ]
         ];
 
-        try {
-           $res = $client->request('POST', $url, $header);
-        } catch (Exception $e) {
-            if ($res->getStatusCode() == 404) {
-                printLog(__METHOD__, 'URL invalid: "'.$url.'".', true);
-                throw new ZohoException('Url invalid.');
-            }
-        }
+        printLog(__METHOD__, 'Requesting to zoho...');
+        $res = $this->gestionRequest('POST', $url, $header);
 
-        if ($res->getStatusCode() != 200) {
+        if ($res->getStatusCode() != 201) {
             printLog(__METHOD__, 'Unexpected error (id: 03):'.
                                 'module : "'.$module.'"\n'.
-                                'critere: "'.$criteria.'"\n'.
-                                'value  : "'.$value.'"\n'.
                                 'URL    : "'.$url.'"\n'.
                                 'code   : "'.$res->getStatusCode().'"\n'.
                                 'body   : "'.$res->getBody().'"', true);
             throw new ZohoException('Unexpected Error (id: 02)');
         }
 
-        $this->historic[] = ['method' => 'PUT',
+        printLog(__METHOD__, 'body: '.$res->getBody());
+
+        $this->historic[] = ['method' => 'POST',
                              'module' => $module,
                              'url' => $url,
                              'header' => $this->defaultHeader,
