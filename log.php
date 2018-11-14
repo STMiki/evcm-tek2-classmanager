@@ -63,7 +63,7 @@ function printLog($from, $message, $isException = 0)
 function realPrintLog()
 {
     try {
-        $GLOBALS['log_class']->__destruct();
+        $GLOBALS['log_class'] = NULL;
     } finally {}
 }
 
