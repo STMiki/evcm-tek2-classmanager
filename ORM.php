@@ -49,6 +49,7 @@ abstract class DatabaseObject {
     abstract public function transformForZoho();
 
     final public function __toString()    {return ($this::__TYPE.': '.$this->getId());}
+    final public function __debugInfo()   {return ([$this::__TYPE => ['id' => $this->getId()]]);}
     final public function getLastId()     {return ($this->last_id);}
     final public function getHistoric()   {return ($this->historic);}
     final public function resetHistoric() {$this->historic = Array();}
@@ -56,7 +57,7 @@ abstract class DatabaseObject {
     final public function __call($name, $arguments)
     {
         $argumentsText = implode(", ", $arguments);
-        $msg = "Trying to call {$name} ({$argumentsText}) which is undefined is this class: ".$this::__TYPE;
+        $msg = "Trying to call {$name} ({$argumentsText}) which is undefined is this class: ".$this;
         if (STRICT == true) {
             printLog(__METHOD__, $msg, 1);
             throw new ORMException($msg);

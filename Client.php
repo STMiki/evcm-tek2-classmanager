@@ -1,5 +1,7 @@
 <?php
 
+require_once('log.php');
+
 final class Client extends DatabaseObject {
     const __TYPE = __CLASS__;
 
